@@ -4,26 +4,59 @@ import { Save, Loader2, AlertCircle, X } from "lucide-react";
 
 const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
   const [formData, setFormData] = useState({
+    item: "",
     moldNo: "",
     documentNo: "",
     customer: "",
+    category: "",
     shrinkageFactor: "",
     plateSize: "",
     plateWeight: "",
     investmentNo: "",
     description: "",
     status: "completed",
+    machine: "",
+    targetedDeliveryDate: "",
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Sample data for dropdowns
+  const categoryOptions = [
+    "Production Mold",
+    "Prototype Mold",
+    "Maintenance Mold",
+    "Test Mold",
+    "Emergency Mold"
+  ];
+
+  const machineOptions = [
+    "CNC Mill 001",
+    "CNC Mill 002", 
+    "Lathe 001",
+    "Lathe 002",
+    "Drill Press 001",
+    "Drill Press 002",
+    "Grinder 001",
+    "Grinder 002",
+    "EDM Machine 001",
+    "EDM Machine 002"
+  ];
+
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      // Format date for input field if it exists
+      const formattedData = { ...initialData };
+      if (formattedData.targetedDeliveryDate) {
+        const date = new Date(formattedData.targetedDeliveryDate);
+        formattedData.targetedDeliveryDate = date.toISOString().split('T')[0];
+      }
+      setFormData(formattedData);
     }
   }, [initialData]);
-  // Simple validation
+
+  // Enhanced validation
   const validateField = (name, value) => {
     if (!value || !value.toString().trim()) {
       return `${name.charAt(0).toUpperCase() + name.slice(1)} is required`;
@@ -38,6 +71,16 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
     if (name === 'plateWeight') {
       if (isNaN(value) || parseFloat(value) <= 0) {
         return 'Plate weight must be a positive number';
+      }
+    }
+
+    if (name === 'targetedDeliveryDate') {
+      const selectedDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        return 'Targeted delivery date cannot be in the past';
       }
     }
     
@@ -62,7 +105,7 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    const requiredFields = ['moldNo', 'documentNo', 'customer', 'shrinkageFactor', 'plateSize', 'plateWeight', 'investmentNo', 'description'];
+    const requiredFields = ['item', 'moldNo', 'documentNo', 'customer', 'category', 'shrinkageFactor', 'plateSize', 'plateWeight', 'investmentNo', 'description', 'targetedDeliveryDate'];
     
     requiredFields.forEach(field => {
       const error = validateField(field, formData[field]);
@@ -74,6 +117,7 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -87,13 +131,21 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
       
+      // Prepare data for submission
+      const submitData = { ...formData };
+      
+      // Convert date string to Date object for backend
+      if (submitData.targetedDeliveryDate) {
+        submitData.targetedDeliveryDate = new Date(submitData.targetedDeliveryDate);
+      }
+      
       const url = initialData 
         ? `http://localhost:8080/api/mold/shared/${initialData.id}`
         : "http://localhost:8080/api/mold/shared";
       
       const method = initialData ? 'put' : 'post';
       
-      const response = await axios[method](url, formData, {
+      const response = await axios[method](url, submitData, {
         headers: {
           Authorization: `Bearer ${refreshToken}`,
         },
@@ -117,12 +169,12 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
     } finally {
       setIsLoading(false);
     }
-  };  return (
-    <div className="bg-white rounded-2xl shadow-xl max-w-4xl mx-auto">
+  };
+
+  return (
+    <>
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl relative">
-      
-        
         <h2 className="text-2xl font-bold flex items-center gap-3 pr-12">
           <Save className="w-6 h-6" />
           {initialData ? "Edit Mold Details" : "Add New Mold"}
@@ -147,6 +199,29 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
       {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Item */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Item <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="item"
+              value={formData.item}
+              onChange={handleChange}
+              placeholder="Enter item name"
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                errors.item ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              }`}
+            />
+            {errors.item && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.item}
+              </p>
+            )}
+          </div>
+
           {/* Mold Number */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -212,6 +287,34 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
                 {errors.customer}
+              </p>
+            )}
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                errors.category ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              }`}
+            >
+              <option value="">Select category...</option>
+              {categoryOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            {errors.category && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.category}
               </p>
             )}
           </div>
@@ -286,6 +389,49 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
                 {errors.plateWeight}
+              </p>
+            )}
+          </div>
+
+          {/* Machine */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Machine
+            </label>
+            <select
+              name="machine"
+              value={formData.machine}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            >
+              <option value="">Select machine...</option>
+              {machineOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Targeted Delivery Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Targeted Delivery Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              name="targetedDeliveryDate"
+              value={formData.targetedDeliveryDate}
+              onChange={handleChange}
+              min={new Date().toISOString().split('T')[0]}
+              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                errors.targetedDeliveryDate ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              }`}
+            />
+            {errors.targetedDeliveryDate && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.targetedDeliveryDate}
               </p>
             )}
           </div>
@@ -396,7 +542,7 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
           </button>
         </div>
       </form>
-    </div>
+    </>
   );
 };
 

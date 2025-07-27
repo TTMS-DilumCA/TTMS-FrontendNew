@@ -19,8 +19,10 @@ export const API_ENDPOINTS = {
     SHARED: '/api/mold/shared',
     BY_ID: (id) => `/api/mold/shared/${id}`,
   },
-  PROCESS: {
+ PROCESS: {
     SHARED: '/api/process/shared',
+    // BY_ID: (id) => `/api/process/shared/${id}`,
+    FINISH: (id) => `/api/process/finish/${id}`, // ✅ CORRECTED: Remove duplicate path
   },
   MANAGER: {
     USERS: '/api/manager/users',

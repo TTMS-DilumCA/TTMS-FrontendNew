@@ -1,14 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Settings, ChevronDown, User, LogOut, Menu, X } from 'lucide-react';
-import { useUser } from '../../contexts/UserContext';
+import axios from 'axios';
 import logo from '../../assets/logo.png';
 
 const NavBarOperator2 = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const { userInfo, getUserInitials, getFullName, getRoleDisplayName, clearUserData } = useUser();
+  const [userInfo, setUserInfo] = useState({ 
+    firstname: '', 
+    lastname: '', 
+    email: '', 
+    role: 'ROLE_MACHINE_OPERATOR_02',
+    loading: true 
+  });
   const location = useLocation();
+
   const handleMenuToggle = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -18,11 +25,47 @@ const NavBarOperator2 = () => {
   };
 
   const handleLogout = () => {
-    clearUserData();
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
     window.location.href = '/login';
   };
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('No token found');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:8080/api/profile', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setUserInfo({
+          firstname: response.data.firstname || '',
+          lastname: response.data.lastname || '',
+          email: response.data.email || '',
+          role: response.data.role || 'ROLE_MACHINE_OPERATOR_02',
+          loading: false
+        });
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          window.location.href = '/login';
+        }
+        setUserInfo(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -47,6 +90,25 @@ const NavBarOperator2 = () => {
     { to: '/profile-operator2', label: 'Profile' },
   ];
 
+  // Helper function to get user initials
+  const getUserInitials = () => {
+    if (userInfo.loading) return '...';
+    const firstInitial = userInfo.firstname?.charAt(0)?.toUpperCase() || '';
+    const lastInitial = userInfo.lastname?.charAt(0)?.toUpperCase() || '';
+    return firstInitial + lastInitial || 'U';
+  };
+
+  // Helper function to get full name
+  const getFullName = () => {
+    if (userInfo.loading) return 'Loading...';
+    return `${userInfo.firstname} ${userInfo.lastname}`.trim() || 'User';
+  };
+
+  // Helper function to get role display name
+  const getRoleDisplayName = () => {
+    return 'Machine Operator 2';
+  };
+
   const isActiveLink = (path) => location.pathname === path;
 
   return (
@@ -54,7 +116,8 @@ const NavBarOperator2 = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left side - Logo and Brand */}
-          <div className="flex items-center space-x-4">            <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <img src={logo} alt="Company Logo" className="h-10 w-49 rounded-lg object-contain" />
               <div className="hidden sm:flex items-center space-x-2">
                 <Settings className="w-6 h-6 text-blue-600" />
@@ -88,22 +151,12 @@ const NavBarOperator2 = () => {
           {/* Right side - User Menu */}
           <div className="flex items-center space-x-4">
             {/* User Profile Dropdown */}
-            <div className="relative user-menu-container">              <button
+            <div className="relative user-menu-container">
+              <button
                 onClick={handleUserMenuToggle}
                 className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
-                {userInfo.profileImageUrl ? (
-                  <img 
-                    src={userInfo.profileImageUrl} 
-                    alt="Profile" 
-                    className="w-8 h-8 rounded-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div className={`w-8 h-8 bg-gradient-to-br from-slate-800 via-blue-700 to-indigo-700 rounded-full flex items-center justify-center ${userInfo.profileImageUrl ? 'hidden' : ''}`}>
+                <div className="w-8 h-8 bg-gradient-to-br from-slate-800 via-blue-700 to-indigo-700 rounded-full flex items-center justify-center">
                   <span className="text-xs font-bold text-white">
                     {getUserInitials()}
                   </span>
@@ -117,27 +170,22 @@ const NavBarOperator2 = () => {
               
               {/* User Dropdown Menu */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">                  <div className="px-4 py-3 border-b border-gray-100">
+                <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="px-4 py-3 border-b border-gray-100">
                     <div className="flex items-center space-x-3">
-                      {userInfo.profileImageUrl ? (
-                        <img 
-                          src={userInfo.profileImageUrl} 
-                          alt="Profile" 
-                          className="w-10 h-10 rounded-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className={`w-10 h-10 bg-gradient-to-br from-slate-800 via-blue-700 to-indigo-700 rounded-full flex items-center justify-center ${userInfo.profileImageUrl ? 'hidden' : ''}`}>
+                      <div className="w-10 h-10 bg-gradient-to-br from-slate-800 via-blue-700 to-indigo-700 rounded-full flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-bold text-white">
                           {getUserInitials()}
                         </span>
                       </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{getFullName()}</div>
-                        <div className="text-sm text-gray-500">{userInfo.email}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">{getFullName()}</div>
+                        <div 
+                          className="text-sm text-gray-500 truncate" 
+                          title={userInfo.email}
+                        >
+                          {userInfo.email}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -146,14 +194,14 @@ const NavBarOperator2 = () => {
                     className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
-                    <User className="w-4 h-4" />
+                    <User className="w-4 h-4 flex-shrink-0" />
                     <span>Profile Settings</span>
                   </Link>
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4 flex-shrink-0" />
                     <span>Sign Out</span>
                   </button>
                 </div>

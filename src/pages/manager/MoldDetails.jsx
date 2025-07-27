@@ -123,32 +123,32 @@ const MoldDetails = () => {
     if (!isOpen) return null;
 
     return (
-      <div className="fixed inset-0 z-50 overflow-auto flex items-center justify-center p-4">
-        {/* Glass backdrop with blur */}
-        <div 
-          className="absolute inset-0 backdrop-blur-md bg-white/20 transition-all duration-300"
-          onClick={onClose}
-        />
-        
-        {/* Modal content with glass effect */}
-        <div className="relative glass bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-white/30 animate-in fade-in zoom-in duration-300">
-          {/* Close button with glass effect */}
-          <div className="absolute top-4 right-4 z-10">
-            <button
+       <div className="fixed inset-0 z-50 overflow-auto flex items-center justify-center p-4">
+            {/* Glass backdrop with blur effect */}
+            <div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-all duration-300"
               onClick={onClose}
-              className="p-2 bg-white/80 backdrop-blur-sm hover:bg-white/90 rounded-full transition-all duration-200 shadow-lg border border-white/50 group"
-            >
-              <X className="w-5 h-5 text-gray-600 group-hover:text-gray-800 transition-colors" />
-            </button>
+            />
+            
+            {/* Modal content with glass morphism effect */}
+            <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/30 animate-in fade-in zoom-in duration-300">
+              {/* Close button with enhanced styling */}
+              <div className="absolute top-4 right-4 z-10">
+                <button
+                  onClick={onClose}
+                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-all duration-200 shadow-sm border border-gray-300 group"
+                >
+                  <X className="w-5 h-5 text-gray-600 group-hover:text-gray-800 transition-colors" />
+                </button>
+              </div>
+              
+              {/* Modal content */}
+              <div className="p-6">
+                {children}
+              </div>
+            </div>
           </div>
-          
-          {/* Content area */}
-          <div className="p-6">
-            {children}
-          </div>
-        </div>
-      </div>
-    );
+        );
   };
 
   return (
