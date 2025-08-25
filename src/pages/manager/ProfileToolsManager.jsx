@@ -26,7 +26,7 @@ function ProfileToolsManager() {
     fetchTools();
   }, []);
 
-  // Filter tools based on search term and active tab
+  // Filter tools based on search term and active tab 
   useEffect(() => {
     let filtered = tools;
 

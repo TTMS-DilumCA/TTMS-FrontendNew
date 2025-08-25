@@ -1,212 +1,96 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState } from "react";
+import { Users, Building2, UserPlus, X } from "lucide-react";
+import NewInternalUserForm from "./NewInternalUserForm";
+import NewExternalUserForm from "./NewExternalUserForm";
 
-const NewUserForm = ({ onClose, onAddUser, initialData }) => {
-  const [formData, setFormData] = useState({
-    firstname: "",
-    lastname: "",
-    fullname: "",
-    email: "",
-    password: "",
-    role: "MANAGER",
-    epfNo: "",
-  });
+const NewUserForm = ({ onClose, onAddUser, onAddCustomer, initialData, userType = "internal" }) => {
+  const [activeTab, setActiveTab] = useState(initialData ? (initialData.role ? "internal" : "external") : userType);
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
+  const tabs = [
+    {
+      id: "internal",
+      label: "Internal Users",
+      icon: <Users className="w-4 h-4" />,
+      description: "Managers, operators, and staff"
+    },
+    {
+      id: "external",
+      label: "External Users",
+      icon: <Building2 className="w-4 h-4" />,
+      description: "Customers and partners"
     }
-  }, [initialData]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem("token");
-  
-      // Extract only the required fields
-      const { firstname, lastname, fullname, email, role, epfNo } = formData;
-      const payload = { firstname, lastname, fullname, email, role, epfNo };
-  
-      if (initialData) {
-        // Update user API call
-        const response = await axios.put(
-          `http://localhost:8080/api/manager/update-user/${initialData.id}`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        onAddUser(response.data); // Update the user in the list
-      } else {
-        // Add user API call
-        const response = await axios.post(
-          "http://localhost:8080/api/manager/add-user",
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        onAddUser(response.data); // Add the new user to the list
-      }
-  
-      onClose(); // Close the modal after successful submission
-    } catch (error) {
-      console.error("Error submitting user form:", error);
-      if (error.response && error.response.status === 403) {
-        alert("You do not have permission to perform this action.");
-      }
-    }
-  };
+  ];
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        {initialData ? "Edit User" : "Add New User"}
-      </h2>
+    <>
+      {/* Header */}
+    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl relative">
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors"
+      >
+        <X className="w-6 h-6" />
+      </button>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* First Name */}
-          <div>
-            <label htmlFor="firstname" className="block text-sm font-medium text-gray-700 mb-1">
-              First Name
-            </label>
-            <input
-              type="text"
-              id="firstname"
-              name="firstname"
-              value={formData.firstname}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Last Name */}
-          <div>
-            <label htmlFor="lastname" className="block text-sm font-medium text-gray-700 mb-1">
-              Last Name
-            </label>
-            <input
-              type="text"
-              id="lastname"
-              name="lastname"
-              value={formData.lastname}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Full Name */}
-          <div>
-            <label htmlFor="fullname" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              id="fullname"
-              name="fullname"
-              value={formData.fullname}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Email */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-
-          {/* Password - Only show when adding new user */}
-          {!initialData && (
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-          )}
-
-          {/* Role */}
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-              Role
-            </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="MANAGER">Manager</option>
-              <option value="MACHINE_OPERATOR_01">Machine Operator 01</option>
-              <option value="MACHINE_OPERATOR_02">Tool Crafter</option>
-            </select>
-          </div>
-
-          {/* EPF Number */}
-          <div>
-            <label htmlFor="epfNo" className="block text-sm font-medium text-gray-700 mb-1">
-              EPF Number
-            </label>
-            <input
-              type="text"
-              id="epfNo"
-              name="epfNo"
-              value={formData.epfNo}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <div className="pt-4">
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {initialData ? "Update User" : "Add User"}
-          </button>
-        </div>
-      </form>
+      <h2 className="text-2xl font-bold flex items-center gap-3 pr-12">
+        <UserPlus className="w-6 h-6" />
+        {initialData 
+          ? `Edit ${activeTab === 'internal' ? 'Internal User' : 'Customer'}` 
+          : `Add New ${activeTab === 'internal' ? 'Internal User' : 'Customer'}`
+        }
+      </h2>
+      <p className="text-blue-100 mt-1">
+        {initialData 
+          ? `Update the ${activeTab === 'internal' ? 'user' : 'customer'} information below`
+          : `Add a new ${activeTab === 'internal' ? 'internal user' : 'customer'} to the system`
+        }
+      </p>
     </div>
+
+      {/* Tabs */}
+      {!initialData && (
+      <div className="border-b border-gray-200 bg-gray-50">
+          <div className="flex">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600 bg-white'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  {tab.icon}
+                  <span className="font-semibold">{tab.label}</span>
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {tab.description}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Form Content */}
+      <div className="p-6">
+        {activeTab === "internal" ? (
+          <NewInternalUserForm
+            onClose={onClose}
+            onAddUser={onAddUser}
+            initialData={initialData?.role ? initialData : null}
+          />
+        ) : (
+          <NewExternalUserForm
+            onClose={onClose}
+            onAddCustomer={onAddCustomer}
+            initialData={!initialData?.role ? initialData : null}
+          />
+        )}
+      </div>
+    </>
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Save, Loader2, AlertCircle, X } from "lucide-react";
+import { Save, Loader2, AlertCircle, X, ChevronDown } from "lucide-react";
 
 const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
   const [formData, setFormData] = useState({
@@ -8,43 +8,45 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
     moldNo: "",
     documentNo: "",
     customer: "",
+    customerId: "", // Store the actual customer ID
     category: "",
     shrinkageFactor: "",
     plateSize: "",
     plateWeight: "",
     investmentNo: "",
     description: "",
-    status: "completed",
     machine: "",
     targetedDeliveryDate: "",
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  
+  // Customer dropdown states
+  const [customers, setCustomers] = useState([]);
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
 
-  // Sample data for dropdowns
+  // Updated category options to match backend expectations
   const categoryOptions = [
-    "Production Mold",
-    "Prototype Mold",
-    "Maintenance Mold",
-    "Test Mold",
-    "Emergency Mold"
+    "New Mold",
+    "Renovate Mold",
+    "Modify Mold",
+    "Shapeup Mold",
   ];
 
   const machineOptions = [
-    "CNC Mill 001",
-    "CNC Mill 002", 
-    "Lathe 001",
-    "Lathe 002",
-    "Drill Press 001",
-    "Drill Press 002",
-    "Grinder 001",
-    "Grinder 002",
-    "EDM Machine 001",
-    "EDM Machine 002"
+    "Machine 01",
+    "Machine 02", 
+    "Machine 03", 
+    "Machine 04", 
+    "Machine 05" 
   ];
 
   useEffect(() => {
+    fetchCustomers();
     if (initialData) {
       // Format date for input field if it exists
       const formattedData = { ...initialData };
@@ -52,9 +54,44 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
         const date = new Date(formattedData.targetedDeliveryDate);
         formattedData.targetedDeliveryDate = date.toISOString().split('T')[0];
       }
-      setFormData(formattedData);
+      // Remove status from formData since we don't send it to backend
+      const { status, completedDate, createdDate, lastModifiedDate, ...cleanData } = formattedData;
+      setFormData(cleanData);
+      setCustomerSearchTerm(formattedData.customer || "");
     }
   }, [initialData]);
+
+  // Filter customers based on search term
+  useEffect(() => {
+    if (customerSearchTerm) {
+      const filtered = customers.filter(customer =>
+        customer.fullname?.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+        customer.company?.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
+        customer.email?.toLowerCase().includes(customerSearchTerm.toLowerCase())
+      );
+      setFilteredCustomers(filtered);
+    } else {
+      setFilteredCustomers(customers);
+    }
+  }, [customerSearchTerm, customers]);
+
+  // Fetch customers from API
+  const fetchCustomers = async () => {
+    try {
+      setLoadingCustomers(true);
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://localhost:8080/api/customers", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      setCustomers(response.data);
+      setFilteredCustomers(response.data);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
 
   // Enhanced validation
   const validateField = (name, value) => {
@@ -103,6 +140,36 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
     }
   };
 
+  // Handle customer search input
+  const handleCustomerSearch = (e) => {
+    const value = e.target.value;
+    setCustomerSearchTerm(value);
+    
+    // Update customer field and clear customerId if user types manually
+    setFormData(prev => ({ 
+      ...prev, 
+      customer: value,
+      customerId: "" // Clear the customer ID when user types manually
+    }));
+    setShowCustomerDropdown(true);
+    
+    // Clear error when user starts typing
+    if (errors.customer) {
+      setErrors(prev => ({ ...prev, customer: '' }));
+    }
+  };
+
+  // Handle customer selection from dropdown
+  const handleCustomerSelect = (customer) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      customer: customer.fullname,     // Display name
+      customerId: customer.id          // Store customer ID for backend
+    }));
+    setCustomerSearchTerm(customer.fullname);
+    setShowCustomerDropdown(false);
+  };
+
   const validateForm = () => {
     const newErrors = {};
     const requiredFields = ['item', 'moldNo', 'documentNo', 'customer', 'category', 'shrinkageFactor', 'plateSize', 'plateWeight', 'investmentNo', 'description', 'targetedDeliveryDate'];
@@ -113,6 +180,17 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
         newErrors[field] = error;
       }
     });
+
+    // Additional validation for customer selection
+    if (formData.customer && !formData.customerId && customers.length > 0) {
+      // Check if the entered customer name matches any existing customer
+      const matchingCustomer = customers.find(c => 
+        c.fullname.toLowerCase() === formData.customer.toLowerCase()
+      );
+      if (!matchingCustomer) {
+        newErrors.customer = "Please select a valid customer from the dropdown";
+      }
+    }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -131,14 +209,15 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
       
-      // Prepare data for submission
-      const submitData = { ...formData };
+      // Prepare data for submission - exclude status and other auto-generated fields
+      const { customerId, ...submitData } = formData;
       
       // Convert date string to Date object for backend
       if (submitData.targetedDeliveryDate) {
         submitData.targetedDeliveryDate = new Date(submitData.targetedDeliveryDate);
       }
       
+      // Backend will set status automatically, so we don't send it
       const url = initialData 
         ? `http://localhost:8080/api/mold/shared/${initialData.id}`
         : "http://localhost:8080/api/mold/shared";
@@ -154,10 +233,8 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
       setSuccessMessage(initialData ? 'Mold updated successfully!' : 'Mold added successfully!');
       onAddMold(response.data);
       
-      // Close modal after a brief delay
-      setTimeout(() => {
-        onClose();
-      }, 1500);
+      // Close modal after successful submission
+      onClose();
       
     } catch (error) {
       console.error("Error saving mold:", error);
@@ -268,26 +345,55 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
             )}
           </div>
 
-          {/* Customer */}
-          <div>
+          {/* Customer - Searchable Dropdown */}
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Customer Name <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              name="customer"
-              value={formData.customer}
-              onChange={handleChange}
-              placeholder="Enter customer name"
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                errors.customer ? 'border-red-500 bg-red-50' : 'border-gray-300'
-              }`}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={customerSearchTerm}
+                onChange={handleCustomerSearch}
+                onFocus={() => setShowCustomerDropdown(true)}
+                placeholder="Search and select customer..."
+                className={`w-full px-4 py-3 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                  errors.customer ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                }`}
+              />
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+            
             {errors.customer && (
               <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
                 {errors.customer}
               </p>
+            )}
+            
+            {/* Customer Dropdown */}
+            {showCustomerDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {loadingCustomers ? (
+                  <div className="p-3 text-center text-gray-500">Loading customers...</div>
+                ) : filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => (
+                    <div
+                      key={customer.id}
+                      className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      onClick={() => handleCustomerSelect(customer)}
+                    >
+                      <div className="font-medium text-gray-900">{customer.fullname}</div>
+                      <div className="text-sm text-gray-500">{customer.company}</div>
+                      <div className="text-xs text-gray-400">{customer.email}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-center text-gray-500">
+                    {customerSearchTerm ? 'No matching customers found' : 'No customers available'}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
@@ -483,24 +589,6 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
           )}
         </div>
 
-        {/* Status */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Status
-          </label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          >
-            <option value="completed">Completed</option>
-            <option value="ongoing">Ongoing</option>
-            <option value="pending">Pending</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
-
         {/* Submit Error */}
         {errors.submit && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -542,6 +630,14 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
           </button>
         </div>
       </form>
+
+      {/* Click outside to close dropdown */}
+      {showCustomerDropdown && (
+        <div 
+          className="fixed inset-0 z-0" 
+          onClick={() => setShowCustomerDropdown(false)}
+        />
+      )}
     </>
   );
 };

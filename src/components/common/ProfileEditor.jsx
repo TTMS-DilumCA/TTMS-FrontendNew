@@ -4,6 +4,8 @@ import axios from "axios";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 
+import { buildApiUrl, API_ENDPOINTS } from "../../config/api";
+
 const ProfileEditor = ({
   initialProfile,
   loading,
@@ -24,13 +26,40 @@ const ProfileEditor = ({
   const handleChange = (e) => {
     setProfile((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+function getUserInfoFromToken() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      id: payload._id || payload.id,
+      email: payload.email,
+      role: payload.role,
+      firstname: payload.firstname,
+      lastname: payload.lastname,
+    };
+  } catch (error) {
+    return null;
+  }
+}
 
+function isTokenValid() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Date.now() / 1000;
+    return payload.exp > now;
+  } catch (error) {
+    return false;
+  }
+}
   const handleFieldSave = async (field) => {
     setAlert({ type: "", message: "" });
     try {
       const payload = { [field]: profile[field] };
       const res = await axios.put(
-        apiEndpoint,
+        buildApiUrl(apiEndpoint), // Use buildApiUrl
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -46,7 +75,6 @@ const ProfileEditor = ({
   const handleFieldCancel = () => {
     setEditField("");
     setAlert({ type: "", message: "" });
-    // Optionally, reload profile from backend to discard changes
   };
 
   const handleImageUpload = async (e) => {
@@ -54,65 +82,115 @@ const ProfileEditor = ({
     if (!file) return;
 
     // Validate file type and size
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!validTypes.includes(file.type)) {
-      setAlert({ type: "danger", message: "Only JPG, PNG, or GIF images allowed" });
+      setAlert({ type: "danger", message: "Only JPG, PNG, GIF, or WebP images allowed" });
       return;
     }
 
     if (file.size > maxSize) {
-      setAlert({ type: "danger", message: "Image size exceeds 10MB limit" });
+      setAlert({ type: "danger", message: "Image size exceeds 5MB limit" });
+      return;
+    }
+
+    // Check if user token is valid
+    if (!isTokenValid()) {
+      setAlert({ type: "danger", message: "Session expired. Please login again." });
+      return;
+    }
+
+    const userInfo = getUserInfoFromToken();
+    if (!userInfo) {
+      setAlert({ type: "danger", message: "Unable to verify user. Please login again." });
       return;
     }
 
     setUploading(true);
     setAlert({ type: "", message: "" });
 
-    try {
-      // 1. Delete previous image if path is available
-      if (profile.profileImagePath) {
-        const oldImageRef = ref(storage, profile.profileImagePath);
-        try {
-          await deleteObject(oldImageRef);
-        } catch (err) {
-          // It's okay if the old image doesn't exist
-          console.warn("Old image could not be deleted:", err.message);
+   try {
+    // 1. Delete previous image - with fallback logic
+    let oldImagePath = profile.profileImagePath;
+    
+    // FALLBACK: Extract path from URL if profileImagePath is missing
+    if (!oldImagePath && profile.profileImageUrl) {
+      try {
+        const url = new URL(profile.profileImageUrl);
+        const pathname = url.pathname;
+        // Extract path from Firebase URL: /v0/b/bucket/o/path -> path
+        const match = pathname.match(/\/o\/(.+)$/);
+        if (match) {
+          oldImagePath = decodeURIComponent(match[1]);
         }
+      } catch (urlError) {
+        // Silently handle URL parsing errors
       }
+    }
 
-      // 2. Upload new image
-      const userId = profile.id;
-      const imagePath = `users/${userId}/profile/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, imagePath);
+    if (oldImagePath) {
+      const oldImageRef = ref(storage, oldImagePath);
+      try {
+        await deleteObject(oldImageRef);
+      } catch (deleteError) {
+        // Silently handle delete errors - don't block upload
+      }
+    }
 
-      const uploadTask = uploadBytesResumable(storageRef, file, {
-        contentType: file.type,
-        customMetadata: {
-          uploadedBy: userId,
-          originalName: file.name
+    // 2. Upload new image
+    const userId = userInfo.id;
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const imagePath = `users/${userId}/profile/${Date.now()}_${sanitizedFileName}`;
+    
+    const storageRef = ref(storage, imagePath);
+
+    const metadata = {
+      contentType: file.type,
+      customMetadata: {
+        userId: userId,
+        uploadedBy: userId,
+        email: userInfo.email,
+        role: userInfo.role,
+        originalName: file.name,
+        uploadDate: new Date().toISOString(),
+        userAgent: navigator.userAgent
+      }
+    };
+
+    const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress = Math.round(
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        );
+        setAlert({ type: "info", message: `Uploading: ${progress}%` });
+      },
+      (error) => {
+        let errorMessage = "Upload failed";
+        
+        if (error.code === 'storage/unauthorized') {
+          errorMessage = "Unauthorized. Please check Firebase Storage rules.";
+        } else if (error.code === 'storage/canceled') {
+          errorMessage = "Upload canceled.";
+        } else if (error.code === 'storage/unknown') {
+          errorMessage = "Unknown error occurred during upload.";
+        } else {
+          errorMessage = `Upload failed: ${error.message}`;
         }
-      });
-
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress = Math.round(
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-          );
-          setAlert({ type: "info", message: `Uploading: ${progress}%` });
-        },
-        (error) => {
-          setAlert({ type: "danger", message: `Upload failed: ${error.message}` });
-          setUploading(false);
-        },
-        async () => {
+        
+        setAlert({ type: "danger", message: errorMessage });
+        setUploading(false);
+      },
+      async () => {
+        try {
           const url = await getDownloadURL(uploadTask.snapshot.ref);
 
-          // 3. Save both the download URL and the storage path to backend
+          // 3. Save to backend
           const res = await axios.put(
-            apiEndpoint,
+            buildApiUrl(apiEndpoint),
             { profileImageUrl: url, profileImagePath: imagePath },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -126,12 +204,16 @@ const ProfileEditor = ({
           setAlert({ type: "success", message: "Profile image updated successfully!" });
           setUploading(false);
           if (onProfileUpdate) onProfileUpdate(res.data);
+        } catch (backendError) {
+          setAlert({ type: "danger", message: "Image uploaded but failed to save to profile. Please try again." });
+          setUploading(false);
         }
-      );
-    } catch (error) {
-      setAlert({ type: "danger", message: `Upload failed: ${error.message}` });
-      setUploading(false);
-    }
+      }
+    );
+  } catch (error) {
+    setAlert({ type: "danger", message: `Upload failed: ${error.message}` });
+    setUploading(false);
+  }
   };
 
   // Alert Component
@@ -174,7 +256,7 @@ const ProfileEditor = ({
         <Alert type={alert.type} message={alert.message} />
       )}
 
-      {/* Profile Image Section */}
+        {/* Profile Image Section */}
       <div className="flex flex-col items-center mb-6 relative">
         <div className="relative">
           {profile.profileImageUrl ? (
@@ -215,6 +297,7 @@ const ProfileEditor = ({
           {profile.profileImageUrl ? "Profile Image" : "No Image"}
         </p>
       </div>
+
 
       {/* Divider */}
       <div className="flex items-center mb-4">
