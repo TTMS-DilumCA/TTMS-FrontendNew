@@ -14,7 +14,7 @@ const HomeMO_02 = () => {
       description: "Manage and configure profile tools",
       icon: <Wrench className="w-8 h-8 text-white" />,
       onClick: () => {
-        // Add navigation logic for profile tools if needed
+        navigate("/profile-tools"),// Add navigation logic for profile tools if needed
         console.log("Profile Tools clicked");
       },
       gradient: "from-emerald-500 to-emerald-600",

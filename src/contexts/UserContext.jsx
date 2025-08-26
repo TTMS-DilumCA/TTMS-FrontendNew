@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { buildApiUrl, API_ENDPOINTS } from '../config/api';
 
 const UserContext = createContext();
 
@@ -40,11 +41,10 @@ export const UserProvider = ({ children }) => {
 
       setUserInfo(prev => ({ ...prev, loading: true, error: null }));
 
-      const response = await axios.get('http://localhost:8080/api/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+const response = await axios.get(buildApiUrl(API_ENDPOINTS.PROFILE), {
+  headers: { Authorization: `Bearer ${token}` },
+});
+
 
       const userData = {
         firstname: response.data.firstname || '',
