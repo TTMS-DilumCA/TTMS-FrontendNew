@@ -4,6 +4,7 @@ import { Settings, ChevronDown, User, LogOut, Menu, X } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import logo from '../../assets/logo.png';
 
+
 const NavBarOperator1 = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);

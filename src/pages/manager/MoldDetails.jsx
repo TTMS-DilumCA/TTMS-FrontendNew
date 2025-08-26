@@ -6,6 +6,7 @@ import NewMoldForm from "../../components/Manager/NewMoldForm";
 import MoldListTable from "../../components/Manager/MoldListTable";
 import NavBarManager from "./NavBarManager";
 import Footer from "../../components/common/Footer";
+import { buildApiUrl, API_ENDPOINTS } from "../../config/api";
 
 const MoldDetails = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,7 +37,7 @@ const MoldDetails = () => {
     setIsLoadingMolds(true);
     try {
       const refreshToken = localStorage.getItem("refreshToken");
-      const response = await axios.get(`http://localhost:8080/api/mold/year/${year}`, {
+      const response = await axios.get(buildApiUrl(API_ENDPOINTS.MOLD.BY_YEAR(year)), {
         headers: {
           Authorization: `Bearer ${refreshToken}`,
         },
@@ -104,7 +105,7 @@ const MoldDetails = () => {
   const handleEditSubmit = async (updatedMold) => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
-      await axios.put(`http://localhost:8080/api/mold/shared/${updatedMold.id}`, updatedMold, {
+       await axios.put(buildApiUrl(API_ENDPOINTS.MOLD.UPDATE(updatedMold.id)), updatedMold, {
         headers: {
           Authorization: `Bearer ${refreshToken}`,
         },
@@ -135,7 +136,7 @@ const MoldDetails = () => {
       if (result.isConfirmed) {
         try {
           const refreshToken = localStorage.getItem("refreshToken");
-          await axios.delete(`http://localhost:8080/api/mold/shared/${id}`, {
+          await axios.delete(buildApiUrl(API_ENDPOINTS.MOLD.DELETE(id)), {
             headers: {
               Authorization: `Bearer ${refreshToken}`,
             },

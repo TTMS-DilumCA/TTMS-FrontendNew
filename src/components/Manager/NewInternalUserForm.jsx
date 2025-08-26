@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { AlertCircle, Save, Loader2 } from "lucide-react";
+import { buildApiUrl, API_ENDPOINTS } from "../../config/api";
 
 const NewInternalUserForm = ({ onClose, onAddUser, initialData }) => {
   const [formData, setFormData] = useState({
@@ -89,8 +90,8 @@ const validateForm = () => {
   
       if (initialData) {
         // Update user API call
-        const response = await axios.put(
-          `http://localhost:8080/api/manager/update-user/${initialData.id}`,
+       const response = await axios.put(
+          buildApiUrl(API_ENDPOINTS.MANAGER.UPDATE_USER(initialData.id)),
           payload,
           {
             headers: {
@@ -101,8 +102,8 @@ const validateForm = () => {
         onAddUser(response.data);
       } else {
         // Add user API call
-        const response = await axios.post(
-          "http://localhost:8080/api/manager/add-user",
+              const response = await axios.post(
+          buildApiUrl(API_ENDPOINTS.MANAGER.ADD_USER),
           formData,
           {
             headers: {

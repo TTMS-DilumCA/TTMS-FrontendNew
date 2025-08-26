@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import axios from "axios";
+import { buildApiUrl, API_ENDPOINTS } from "../../config/api";
+
 
 const MoldListTable = ({
   data = [],
@@ -173,15 +175,15 @@ const filteredData = useMemo(() => {
     try {
       const refreshToken = localStorage.getItem("refreshToken");
       
-      const response = await axios.put(
-        `http://localhost:8080/api/mold/${moldId}/complete`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${refreshToken}`,
-          },
-        }
-      );
+     const response = await axios.put(
+      buildApiUrl(API_ENDPOINTS.MOLD.COMPLETE(moldId)),
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${refreshToken}`,
+        },
+      }
+    );
 
       // Show success message
       await Swal.fire({

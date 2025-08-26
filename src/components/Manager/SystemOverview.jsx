@@ -20,6 +20,8 @@ import {
   Target
 } from 'lucide-react';
 import axios from 'axios';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api'; 
+
 
 const SystemOverview = () => {
   const [dashboardData, setDashboardData] = useState({
@@ -44,19 +46,19 @@ const SystemOverview = () => {
       setError(null);
       
       const refreshToken = localStorage.getItem('refreshToken');
-      const baseURL = 'http://localhost:8080/api/system-overview';
+     
       
       const headers = {
         Authorization: `Bearer ${refreshToken}`,
       };
 
       // Fetch all overview data in parallel
-      const [moldsRes, customersRes, processesRes, toolsRes, workforceRes] = await Promise.all([
-        axios.get(`${baseURL}/molds?timeRange=${selectedPeriod}`, { headers }),
-        axios.get(`${baseURL}/customers?timeRange=${selectedPeriod}`, { headers }),
-        axios.get(`${baseURL}/processes?timeRange=${selectedPeriod}`, { headers }),
-        axios.get(`${baseURL}/tools?timeRange=${selectedPeriod}`, { headers }),
-        axios.get(`${baseURL}/workforce?timeRange=${selectedPeriod}`, { headers })
+   const [moldsRes, customersRes, processesRes, toolsRes, workforceRes] = await Promise.all([
+        axios.get(buildApiUrl(API_ENDPOINTS.SYSTEM_OVERVIEW.MOLDS(selectedPeriod)), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.SYSTEM_OVERVIEW.CUSTOMERS(selectedPeriod)), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.SYSTEM_OVERVIEW.PROCESSES(selectedPeriod)), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.SYSTEM_OVERVIEW.TOOLS(selectedPeriod)), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.SYSTEM_OVERVIEW.WORKFORCE(selectedPeriod)), { headers })
       ]);
 
       setDashboardData({

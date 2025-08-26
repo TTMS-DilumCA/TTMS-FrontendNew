@@ -15,6 +15,7 @@ import Swal from 'sweetalert2';
 import NavBarOperator2 from './NavBarOperator2';
 import Footer from '../../components/common/Footer';
 import AddToolForm from '../../components/Machine_operator02/AddToolForm';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 
 function ProfileTools() {
   const [tools, setTools] = useState([]);
@@ -63,12 +64,11 @@ function ProfileTools() {
       if (!userId) {
         throw new Error('User ID not found in token. Please login again.');
       }
-      
-      const response = await axios.get(`http://localhost:8080/api/tools/crafter/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+   const response = await axios.get(buildApiUrl(API_ENDPOINTS.TOOLS.BY_CRAFTER(userId)), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
       setTools(response.data);
       setFilteredTools(response.data);
     } catch (error) {
@@ -96,15 +96,15 @@ function ProfileTools() {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(
-        'http://localhost:8080/api/tools',
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    const response = await axios.post(
+      buildApiUrl(API_ENDPOINTS.TOOLS.CREATE),
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
       setTools(prev => [response.data, ...prev]);
       setShowAddModal(false);
@@ -145,11 +145,11 @@ function ProfileTools() {
     if (result.isConfirmed) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:8080/api/tools/${toolId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+      await axios.delete(buildApiUrl(API_ENDPOINTS.TOOLS.DELETE(toolId)), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
         setTools(prev => prev.filter(tool => tool.id !== toolId));
         

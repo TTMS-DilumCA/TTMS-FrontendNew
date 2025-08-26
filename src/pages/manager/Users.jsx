@@ -3,6 +3,7 @@ import { Search, Edit, Trash2, X, User, Users as UsersIcon, Building2, UserPlus,
 import axios from "axios";
 import Swal from "sweetalert2";
 import NewUserForm from "../../components/Manager/NewUserForm";
+import { buildApiUrl, API_ENDPOINTS } from "../../config/api";
 
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,14 +48,14 @@ const Users = () => {
       const refreshToken = localStorage.getItem("refreshToken");
       
       // Fetch internal users
-      const usersResponse = await axios.get("http://localhost:8080/api/manager/users", {
+       const usersResponse = await axios.get(buildApiUrl(API_ENDPOINTS.MANAGER.USERS), {
         headers: {
           Authorization: `Bearer ${refreshToken}`,
         },
       });
       
       // Fetch customers (external users)
-      const customersResponse = await axios.get("http://localhost:8080/api/customers", {
+   const customersResponse = await axios.get(buildApiUrl(API_ENDPOINTS.CUSTOMERS.LIST), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -150,8 +151,8 @@ const Users = () => {
         const { firstname, lastname, fullname, email, role, epfNo } = updatedUser;
         const payload = { firstname, lastname, fullname, email, role, epfNo };
 
-        const response = await axios.put(
-          `http://localhost:8080/api/manager/update-user/${updatedUser.id}`,
+         const response = await axios.put(
+          buildApiUrl(API_ENDPOINTS.MANAGER.UPDATE_USER(updatedUser.id)),
           payload,
           {
             headers: {
@@ -168,7 +169,7 @@ const Users = () => {
       } else {
         // Handle customer update
         const response = await axios.put(
-          `http://localhost:8080/api/customers/${updatedUser.id}`,
+          buildApiUrl(API_ENDPOINTS.CUSTOMERS.UPDATE(updatedUser.id)),
           updatedUser,
           {
             headers: {
@@ -196,9 +197,9 @@ const Users = () => {
 
   const handleDeleteClick = async (id) => {
     const entityType = activeTab === "internal" ? "user" : "customer";
-    const endpoint = activeTab === "internal" 
-      ? `http://localhost:8080/api/manager/delete-user/${id}`
-      : `http://localhost:8080/api/customers/${id}`;
+   const endpoint = activeTab === "internal" 
+    ? buildApiUrl(API_ENDPOINTS.MANAGER.DELETE_USER(id))
+    : buildApiUrl(API_ENDPOINTS.CUSTOMERS.DELETE(id));
 
     Swal.fire({
       title: "Are you sure?",

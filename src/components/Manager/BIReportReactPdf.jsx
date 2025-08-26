@@ -3,6 +3,7 @@ import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, Image, pdf } f
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { FileText, Download, Camera, BarChart3, PieChart } from 'lucide-react';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 
 // Enhanced styles for professional PDF
 const styles = StyleSheet.create({
@@ -998,11 +999,11 @@ function BIReportReactPdf({ triggerComponent = null }) {
       const currentYear = new Date().getFullYear();
 
       const [moldsRes, processesRes, usersRes, customersRes, analyticsRes] = await Promise.all([
-        axios.get('http://localhost:8080/api/mold/shared', { headers }),
-        axios.get('http://localhost:8080/api/process/shared', { headers }),
-        axios.get('http://localhost:8080/api/manager/users', { headers }),
-        axios.get('http://localhost:8080/api/customers', { headers }),
-        axios.get(`http://localhost:8080/api/mold/analytics/${currentYear}`, { headers })
+        axios.get(buildApiUrl(API_ENDPOINTS.MOLD.SHARED), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.PROCESS.SHARED), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.MANAGER.USERS), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.CUSTOMERS.LIST), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.MOLD.ANALYTICS(currentYear)), { headers })
       ]);
 
       const data = {

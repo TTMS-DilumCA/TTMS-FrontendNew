@@ -26,6 +26,7 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Pie, Bar } from 'react-chartjs-2';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api'; 
 
 // Register Chart.js components
 ChartJS.register(
@@ -59,11 +60,11 @@ const MoldAnalytics = () => {
       setError(null);
       
       const refreshToken = localStorage.getItem('refreshToken');
-      const response = await axios.get(`http://localhost:8080/api/mold/analytics/${selectedYear}`, {
-        headers: {
-          Authorization: `Bearer ${refreshToken}`,
-        },
-      });
+const response = await axios.get(buildApiUrl(API_ENDPOINTS.MOLD.ANALYTICS(selectedYear)), {
+  headers: {
+    Authorization: `Bearer ${refreshToken}`,
+  },
+});
       
       setAnalyticsData(response.data);
     } catch (err) {

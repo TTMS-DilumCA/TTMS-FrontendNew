@@ -13,6 +13,7 @@ import {
   ArrowUpDown
 } from 'lucide-react';
 import axios from 'axios';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 
 function ProcessDetailsbyProcess() {
   const [processData, setProcessData] = useState([]);
@@ -34,7 +35,7 @@ function ProcessDetailsbyProcess() {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8080/api/process/shared', {
+        const response = await axios.get(buildApiUrl(API_ENDPOINTS.PROCESS.SHARED), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -76,7 +77,7 @@ function ProcessDetailsbyProcess() {
     try {
       setLoadingDetails(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:8080/api/process/details/${processId}`, {
+       const response = await axios.get(buildApiUrl(API_ENDPOINTS.PROCESS.DETAILS(processId)), {
         headers: {
           Authorization: `Bearer ${token}`,
         },

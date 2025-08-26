@@ -4,6 +4,7 @@ import { saveAs } from 'file-saver';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { FileSpreadsheet, Download } from 'lucide-react';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 
 const BIReportExcel = ({ triggerComponent = null }) => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -16,11 +17,11 @@ const BIReportExcel = ({ triggerComponent = null }) => {
       const headers = { Authorization: `Bearer ${token}` };
 
       // Fetch all necessary data
-      const [moldsRes, processesRes, usersRes, customersRes] = await Promise.all([
-        axios.get('http://localhost:8080/api/mold/shared', { headers }),
-        axios.get('http://localhost:8080/api/process/shared', { headers }),
-        axios.get('http://localhost:8080/api/manager/users', { headers }),
-        axios.get('http://localhost:8080/api/customers', { headers })
+   const [moldsRes, processesRes, usersRes, customersRes] = await Promise.all([
+        axios.get(buildApiUrl(API_ENDPOINTS.MOLD.SHARED), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.PROCESS.SHARED), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.MANAGER.USERS), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.CUSTOMERS.LIST), { headers })
       ]);
 
       const moldsData = moldsRes.data;

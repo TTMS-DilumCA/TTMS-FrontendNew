@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Save, Loader2, AlertCircle, X, ChevronDown } from "lucide-react";
+import { buildApiUrl, API_ENDPOINTS } from "../../config/api";
 
 const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
   const [formData, setFormData] = useState({
@@ -80,9 +81,9 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
     try {
       setLoadingCustomers(true);
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:8080/api/customers", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+    const response = await axios.get(buildApiUrl(API_ENDPOINTS.CUSTOMERS.LIST), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
       
       setCustomers(response.data);
       setFilteredCustomers(response.data);
@@ -217,11 +218,11 @@ const NewMoldForm = ({ onClose, onAddMold, initialData }) => {
         submitData.targetedDeliveryDate = new Date(submitData.targetedDeliveryDate);
       }
       
-      // Backend will set status automatically, so we don't send it
-      const url = initialData 
-        ? `http://localhost:8080/api/mold/shared/${initialData.id}`
-        : "http://localhost:8080/api/mold/shared";
-      
+      // Backend will set status automatically, so we don't send it updated: Use buildApiUrl with API_ENDPOINTS
+  const url = initialData
+      ? buildApiUrl(API_ENDPOINTS.MOLD.UPDATE(initialData.id))
+      : buildApiUrl(API_ENDPOINTS.MOLD.SHARED);
+    
       const method = initialData ? 'put' : 'post';
       
       const response = await axios[method](url, submitData, {

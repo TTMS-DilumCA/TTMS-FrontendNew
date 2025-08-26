@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 
 
 function ProfileToolsManager() {
@@ -59,7 +60,7 @@ function ProfileToolsManager() {
         throw new Error('Authentication token not found. Please login again.');
       }
       
-      const response = await axios.get('http://localhost:8080/api/tools/with-crafter-details', {
+    const response = await axios.get(buildApiUrl(API_ENDPOINTS.TOOLS.WITH_CRAFTER_DETAILS), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -103,7 +104,7 @@ function ProfileToolsManager() {
       setAcknowledgingTool(toolId);
       try {
         const token = localStorage.getItem('token');
-        await axios.put(`http://localhost:8080/api/tools/${toolId}/acknowledge`, {}, {
+        await axios.put(buildApiUrl(API_ENDPOINTS.TOOLS.ACKNOWLEDGE(toolId)), {}, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

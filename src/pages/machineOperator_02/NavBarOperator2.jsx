@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Settings, ChevronDown, User, LogOut, Menu, X } from 'lucide-react';
 import axios from 'axios';
 import logo from '../../assets/logo.png';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
+
 
 const NavBarOperator2 = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -40,11 +42,11 @@ const NavBarOperator2 = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:8080/api/profile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+const response = await axios.get(buildApiUrl(API_ENDPOINTS.PROFILE), {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
         setUserInfo({
           firstname: response.data.firstname || '',

@@ -5,6 +5,7 @@ import html2canvas from 'html2canvas';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { FileText, Download, Camera, BarChart3, PieChart, TrendingUp } from 'lucide-react';
+import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 
 function BIReportPdf({ triggerComponent = null }) {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -19,11 +20,11 @@ function BIReportPdf({ triggerComponent = null }) {
       // Fetch all necessary data including analytics
       const currentYear = new Date().getFullYear();
       const [moldsRes, processesRes, usersRes, customersRes, analyticsRes] = await Promise.all([
-        axios.get('http://localhost:8080/api/mold/shared', { headers }),
-        axios.get('http://localhost:8080/api/process/shared', { headers }),
-        axios.get('http://localhost:8080/api/manager/users', { headers }),
-        axios.get('http://localhost:8080/api/customers', { headers }),
-        axios.get(`http://localhost:8080/api/mold/analytics/${currentYear}`, { headers })
+        axios.get(buildApiUrl(API_ENDPOINTS.MOLD.SHARED), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.PROCESS.SHARED), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.MANAGER.USERS), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.CUSTOMERS.LIST), { headers }),
+        axios.get(buildApiUrl(API_ENDPOINTS.MOLD.ANALYTICS(currentYear)), { headers })
       ]);
 
       const moldsData = moldsRes.data;

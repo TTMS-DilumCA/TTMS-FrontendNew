@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { AlertCircle, Save, Loader2 } from "lucide-react";
+import { buildApiUrl, API_ENDPOINTS } from "../../config/api";
 
 const NewExternalUserForm = ({ onClose, onAddCustomer, initialData }) => {
   const [formData, setFormData] = useState({
@@ -79,28 +80,28 @@ const NewExternalUserForm = ({ onClose, onAddCustomer, initialData }) => {
     const token = localStorage.getItem("token");
 
     if (initialData) {
-      const response = await axios.put(
-        `http://localhost:8080/api/customers/${initialData.id}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      onAddCustomer(response.data);
-    } else {
-      const response = await axios.post(
-        "http://localhost:8080/api/customers",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      onAddCustomer(response.data);
-    }
+        const response = await axios.put(
+          buildApiUrl(API_ENDPOINTS.CUSTOMERS.UPDATE(initialData.id)),
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        onAddCustomer(response.data);
+      } else {
+        const response = await axios.post(
+          buildApiUrl(API_ENDPOINTS.CUSTOMERS.LIST),
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        onAddCustomer(response.data);
+      }
 
     onClose();
   } catch (error) {
