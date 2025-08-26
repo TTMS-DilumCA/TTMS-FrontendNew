@@ -45,6 +45,7 @@ const HomeManager = () => {
       title: "Business Intelligence",
       description: "Generate detailed reports and analytics for data-driven decision making",
       icon: <FileText className="w-12 h-12" />,
+      onClick: () => navigate("/business-intelligence"),
       gradient: "from-green-500 to-green-600",
       bgColor: "bg-green-50",
       hoverColor: "hover:bg-green-100",
@@ -66,6 +67,7 @@ const HomeManager = () => {
       title: "Tool Configuration",
       description: "Advanced tool profile management and configuration optimization",
       icon: <Wrench className="w-12 h-12" />,
+      onClick: () => navigate("/profile-tools-manager"),
       gradient: "from-teal-500 to-teal-600",
       bgColor: "bg-teal-50",
       hoverColor: "hover:bg-teal-100",
@@ -86,8 +88,8 @@ const HomeManager = () => {
   ];
   return (
     <>
-      <NavBarManager />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 pt-16">
+
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         {/* Hero Section */}
         <div className="relative overflow-hidden">
           {/* Subtle Background Pattern */}
@@ -194,10 +196,9 @@ const HomeManager = () => {
             </div>
           </div>
         </div>
-        
-        <Footer />
-      </div>
-    </>
+        </div>
+       </>
+    
   );
 };
 

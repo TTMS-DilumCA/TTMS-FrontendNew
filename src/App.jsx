@@ -17,6 +17,9 @@ import ProcessManage from './pages/machineOperator_01/ProcessManage';
 import ProfileManager from './pages/manager/ProfileManager';
 import ProfileMoperator1 from './pages/machineOperator_01/ProfileMoperator1';
 import ProfileMoperator2 from './pages/machineOperator_02/ProfileMoperator2';
+import ProfileTools from './pages/machineOperator_02/ProfileTools';
+import ProfileToolsManager from './pages/manager/ProfileToolsManager';
+import BusinessIntelligencePage from './pages/manager/BusinessIntelligencePage';
 
 function App() {
   return (
@@ -36,6 +39,8 @@ function App() {
         <Route path='/process-details' element={<ProtectedRoute component={ProcessDetails} role="ROLE_MANAGER" />} />
         <Route path = 'users' element={<ProtectedRoute component = {Users} role ="ROLE_MANAGER"/> }/>
         <Route path='/profile-manager' element={<ProtectedRoute component={ProfileManager} role="ROLE_MANAGER" />} />
+        <Route path='/profile-tools-manager' element={<ProtectedRoute component={ProfileToolsManager} role="ROLE_MANAGER" />} />
+        <Route path='/business-intelligence' element={<ProtectedRoute component={BusinessIntelligencePage} role="ROLE_MANAGER" />} />
 
   {/* machineoperator 01  routes */}
         <Route path='/operator1' element={<ProtectedRoute component={HomeMO_01} role="ROLE_MACHINE_OPERATOR_01" />} />
@@ -45,6 +50,7 @@ function App() {
   {/* machineoperator 02  routes */}
         <Route path='/operator2' element={<ProtectedRoute component={HomeMO_02} role="ROLE_MACHINE_OPERATOR_02" />} />
         <Route path='/profile-operator2' element={<ProtectedRoute component={ProfileMoperator2} role="ROLE_MACHINE_OPERATOR_02" />} />
+        <Route path='/profile-tools' element={<ProtectedRoute component={ProfileTools} role="ROLE_MACHINE_OPERATOR_02" />} />
 
         {/* Redirect to login for any unmatched routes */}
       </Routes>

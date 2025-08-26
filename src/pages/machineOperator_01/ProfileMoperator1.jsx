@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import ProfileEditor from "../../components/common/ProfileEditor";
+import { buildApiUrl } from "../../config/api";
 
 function ProfileMoperator1() {
   const [profile, setProfile] = useState(null);
@@ -11,7 +12,7 @@ function ProfileMoperator1() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:8080/api/profile", {
+        const res = await axios.get(buildApiUrl("/api/profile"), { //  Use buildApiUrl
           headers: { Authorization: `Bearer ${token}` },
         });
         setProfile(res.data);
@@ -26,7 +27,7 @@ function ProfileMoperator1() {
     <ProfileEditor
       initialProfile={profile}
       loading={loading}
-      apiEndpoint="http://localhost:8080/api/profile"
+      apiEndpoint="/api/profile" //  Just the path
       token={localStorage.getItem("token")}
       onProfileUpdate={setProfile}
     />

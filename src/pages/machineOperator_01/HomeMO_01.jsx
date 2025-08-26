@@ -28,6 +28,7 @@ const HomeMO_01 = () => {
   ];
 
   return (
+     <>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header Section */}
       <div className="pt-20 pb-8 px-4 sm:px-6 lg:px-8">
@@ -140,9 +141,9 @@ const HomeMO_01 = () => {
         </div>
       </div>
       
-      {/* Footer */}
-      <Footer />
+   
     </div>
+   </>
   );
 };
 
