@@ -13,5 +13,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Explicit bucket reference for Gen2
-export const storage = getStorage(app, `gs://${import.meta.env.VITE_FIREBASE_STORAGE_BUCKET}`);
+
+// Add fallback bucket URL in case environment variable is undefined
+const bucketUrl = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "ttms-9fce5.firebasestorage.app";
+
+// Explicit bucket reference for Gen2 with fallback
+export const storage = getStorage(app, `gs://${bucketUrl}`);
+
+// Export the Firebase app instance for use in other components
+export default app;

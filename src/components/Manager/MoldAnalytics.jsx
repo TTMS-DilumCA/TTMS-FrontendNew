@@ -41,9 +41,8 @@ ChartJS.register(
   ArcElement
 );
 
-const MoldAnalytics = () => {
+const MoldAnalytics = ({ selectedYear, onYearChange }) => {
   const [analyticsData, setAnalyticsData] = useState(null);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -75,8 +74,8 @@ const response = await axios.get(buildApiUrl(API_ENDPOINTS.MOLD.ANALYTICS(select
     }
   };
 
-  const handleRefresh = () => {
-    fetchAnalytics();
+const handleRefresh = () => {
+    fetchAnalyticsData(selectedYear);
   };
 
   const calculatePercentage = (value, total) => {
@@ -499,14 +498,14 @@ const response = await axios.get(buildApiUrl(API_ENDPOINTS.MOLD.ANALYTICS(select
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+    <div>
           <h2 className="text-2xl font-bold text-gray-900">Mold Analytics Dashboard</h2>
           <p className="text-gray-600">Comprehensive analytics for {selectedYear}</p>
         </div>
         <div className="flex items-center gap-3">
-          <select
+           <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            onChange={(e) => onYearChange(parseInt(e.target.value))}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           >
             {yearOptions.map(year => (
@@ -569,28 +568,19 @@ const response = await axios.get(buildApiUrl(API_ENDPOINTS.MOLD.ANALYTICS(select
       </div>
 
       {/* Export Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Export Analytics Reports</h3>
-            <p className="text-gray-600">Download detailed reports for {selectedYear}</p>
-          </div>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <Download className="w-4 h-4" />
-              Category Report
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <Download className="w-4 h-4" />
-              Delivery Report
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <Download className="w-4 h-4" />
-              Full Analytics
-            </button>
-          </div>
-        </div>
-      </div>
+   <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className="text-lg font-semibold text-gray-900">Export Analytics Reports</h3>
+      <p className="text-gray-600">Download detailed reports for {selectedYear}</p>
+    </div>
+    <div>
+      <h4 className="text-md font-medium text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+        Analytics Overview {selectedYear}
+      </h4>
+    </div>
+  </div>
+</div>
     </div>
   );
 };

@@ -14,6 +14,7 @@ import BIReportReactPdf from '../../components/Manager/BIReportReactPdf';
 
 function BusinessIntelligencePage() {
   const [activeTab, setActiveTab] = useState('analytics');
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const TabButton = ({ id, label, icon: Icon, isActive, onClick }) => (
     <button
@@ -31,7 +32,6 @@ function BusinessIntelligencePage() {
 
   return (
     <>
-      <NavBarManager />
       <div className="min-h-screen bg-gray-50 pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
@@ -43,11 +43,6 @@ function BusinessIntelligencePage() {
               </div>
               
               <div className="flex items-center gap-4">
-                {/* Export Buttons */}
-                <div className="flex items-center gap-2">
-                  
-                </div>
-
                 {/* Tab Navigation */}
                 <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200">
                   <TabButton
@@ -71,15 +66,14 @@ function BusinessIntelligencePage() {
 
           {/* Content based on active tab */}
           {activeTab === 'analytics' ? (
-            <MoldAnalytics />
+            <MoldAnalytics selectedYear={selectedYear} onYearChange={setSelectedYear} />
           ) : (
             <SystemOverview />
           )}
 
           {/* Report Generator Cards */}
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <BIReportExcel />
-            <BIReportReactPdf />
+            <BIReportReactPdf selectedYear={selectedYear} />
           </div>
         </div>
       </div>

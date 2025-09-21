@@ -75,7 +75,7 @@ const NewProcessForm = ({ onClose, onAddProcess }) => {
       );
       
       // Filter only ongoing molds
-      const ongoingMolds = response.data.filter(mold => mold.status === 'ongoing');
+      const ongoingMolds = response.data.filter(mold => mold.status === 'Ongoing');
       setMolds(ongoingMolds);
       setFilteredMolds(ongoingMolds);
     } catch (error) {

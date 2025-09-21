@@ -9,13 +9,14 @@ import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 const NavBarOperator2 = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [userInfo, setUserInfo] = useState({ 
-    firstname: '', 
-    lastname: '', 
-    email: '', 
-    role: 'ROLE_MACHINE_OPERATOR_02',
-    loading: true 
-  });
+const [userInfo, setUserInfo] = useState({ 
+  firstname: '', 
+  lastname: '', 
+  email: '', 
+  role: 'ROLE_MACHINE_OPERATOR_02',
+  profileImageUrl: null,  // Add this line
+  loading: true 
+});
   const location = useLocation();
 
   const handleMenuToggle = () => {
@@ -49,11 +50,12 @@ const response = await axios.get(buildApiUrl(API_ENDPOINTS.PROFILE), {
 });
 
         setUserInfo({
-          firstname: response.data.firstname || '',
-          lastname: response.data.lastname || '',
-          email: response.data.email || '',
-          role: response.data.role || 'ROLE_MACHINE_OPERATOR_02',
-          loading: false
+     firstname: response.data.firstname || '',
+  lastname: response.data.lastname || '',
+  email: response.data.email || '',
+  role: response.data.role || 'ROLE_MACHINE_OPERATOR_02',
+  profileImageUrl: response.data.profileImageUrl || null,  // Add this line
+  loading: false
         });
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -88,7 +90,7 @@ const response = await axios.get(buildApiUrl(API_ENDPOINTS.PROFILE), {
 
   const navigationItems = [
     { to: '/operator2', label: 'Home' },
-    { to: '/operator-tasks', label: 'Machine Processes' },
+    { to: '/profile-tools', label: 'Profile Tools' },
     { to: '/profile-operator2', label: 'Profile' },
   ];
 
@@ -154,42 +156,64 @@ const response = await axios.get(buildApiUrl(API_ENDPOINTS.PROFILE), {
           <div className="flex items-center space-x-4">
             {/* User Profile Dropdown */}
             <div className="relative user-menu-container">
-              <button
-                onClick={handleUserMenuToggle}
-                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-              >
-                <div className="w-8 h-8 bg-gradient-to-br from-slate-800 via-blue-700 to-indigo-700 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-bold text-white">
-                    {getUserInitials()}
-                  </span>
-                </div>
-                <div className="hidden md:block text-left">
-                  <div className="text-sm font-medium text-gray-700">{getFullName()}</div>
-                  <div className="text-xs text-gray-500">{getRoleDisplayName()}</div>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
+             <button
+  onClick={handleUserMenuToggle}
+  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+>
+  {userInfo.profileImageUrl ? (
+    <img 
+      src={userInfo.profileImageUrl} 
+      alt="Profile" 
+      className="w-8 h-8 rounded-full object-cover"
+      onError={(e) => {
+        e.target.style.display = 'none';
+        e.target.nextSibling.style.display = 'flex';
+      }}
+    />
+  ) : null}
+  <div className={`w-8 h-8 bg-gradient-to-br from-slate-800 via-blue-700 to-indigo-700 rounded-full flex items-center justify-center ${userInfo.profileImageUrl ? 'hidden' : ''}`}>
+    <span className="text-xs font-bold text-white">
+      {getUserInitials()}
+    </span>
+  </div>
+  <div className="hidden md:block text-left">
+    <div className="text-sm font-medium text-gray-700">{getFullName()}</div>
+    <div className="text-xs text-gray-500">Tool Crafter</div>
+  </div>
+  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+</button>
               
               {/* User Dropdown Menu */}
               {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
                   <div className="px-4 py-3 border-b border-gray-100">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-slate-800 via-blue-700 to-indigo-700 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-bold text-white">
-                          {getUserInitials()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 truncate">{getFullName()}</div>
-                        <div 
-                          className="text-sm text-gray-500 truncate" 
-                          title={userInfo.email}
-                        >
-                          {userInfo.email}
-                        </div>
-                      </div>
-                    </div>
+                   <div className="flex items-center space-x-3">
+  {userInfo.profileImageUrl ? (
+    <img 
+      src={userInfo.profileImageUrl} 
+      alt="Profile" 
+      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+      onError={(e) => {
+        e.target.style.display = 'none';
+        e.target.nextSibling.style.display = 'flex';
+      }}
+    />
+  ) : null}
+  <div className={`w-10 h-10 bg-gradient-to-br from-slate-800 via-blue-700 to-indigo-700 rounded-full flex items-center justify-center flex-shrink-0 ${userInfo.profileImageUrl ? 'hidden' : ''}`}>
+    <span className="text-sm font-bold text-white">
+      {getUserInitials()}
+    </span>
+  </div>
+  <div className="flex-1 min-w-0">
+    <div className="font-medium text-gray-900 truncate">{getFullName()}</div>
+    <div 
+      className="text-sm text-gray-500 truncate" 
+      title={userInfo.email}
+    >
+      {userInfo.email}
+    </div>
+  </div>
+</div>
                   </div>
                   <Link
                     to="/profile-operator2"
