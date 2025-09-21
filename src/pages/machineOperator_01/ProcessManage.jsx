@@ -4,7 +4,6 @@ import axios from 'axios';
 import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 import NewProcessForm from '../../components/Machine_operator01/NewProcessForm';
 import NavBarOperator1 from './NavBarOperator1';
-import Footer from '../../components/common/Footer';
 import Swal from 'sweetalert2';
 
 function ProcessManage() {

@@ -470,28 +470,19 @@ const SystemOverview = () => {
       </ChartCard>
 
       {/* Export Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Export System Reports</h3>
-            <p className="text-gray-600">Download detailed reports for {selectedPeriod.toLowerCase()} analysis</p>
-          </div>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <Download className="w-4 h-4" />
-              Process Report
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-              <Download className="w-4 h-4" />
-              Analytics Report
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <Download className="w-4 h-4" />
-              Full System Report
-            </button>
-          </div>
-        </div>
-      </div>
+   {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className="text-lg font-semibold text-gray-900">Export Analytics Reports</h3>
+      <p className="text-gray-600">Download detailed reports for {selectedYear}</p>
+    </div>
+    <div>
+      <h4 className="text-md font-medium text-gray-800 bg-gray-100 px-4 py-2 rounded-lg">
+        Analytics Overview {selectedYear}
+      </h4>
+    </div>
+  </div>
+</div> */}
     </div>
   );
 };

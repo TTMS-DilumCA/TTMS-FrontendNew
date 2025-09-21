@@ -12,8 +12,6 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import NavBarOperator2 from './NavBarOperator2';
-import Footer from '../../components/common/Footer';
 import AddToolForm from '../../components/Machine_operator02/AddToolForm';
 import { buildApiUrl, API_ENDPOINTS } from '../../config/api';
 
@@ -235,7 +233,7 @@ function ProfileTools() {
 
   return (
     <>
-      <NavBarOperator2 />
+   
       <div className="min-h-screen bg-gray-50 pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
@@ -404,7 +402,7 @@ function ProfileTools() {
           </Modal>
         </div>
       </div>
-      <Footer />
+      
     </>
   );
 }

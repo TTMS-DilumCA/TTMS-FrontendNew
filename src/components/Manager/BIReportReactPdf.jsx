@@ -274,6 +274,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2',
     color: '#991B1B',
   },
+  chartContainerVertical: {
+  flexDirection: 'column',
+  marginBottom: 20,
+},
+chartFull: {
+  width: '100%',
+  marginBottom: 15,
+},
 });
 
 // Chart generation function
@@ -287,14 +295,16 @@ const generateChartImage = async (data, type, options = {}) => {
     // Set background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    if (type === 'pie') {
-      drawPieChart(ctx, data, canvas.width, canvas.height, options);
-    } else if (type === 'bar') {
-      drawBarChart(ctx, data, canvas.width, canvas.height, options);
-    } else if (type === 'donut') {
-      drawDonutChart(ctx, data, canvas.width, canvas.height, options);
-    }
+
+  if (type === 'pie') {
+  drawPieChart(ctx, data, canvas.width, canvas.height, options);
+} else if (type === 'bar') {
+  drawBarChart(ctx, data, canvas.width, canvas.height, options);
+} else if (type === 'donut') {
+  drawDonutChart(ctx, data, canvas.width, canvas.height, options);
+} else if (type === 'stackedBar') {
+  drawStackedBarChart(ctx, data, canvas.width, canvas.height, options);
+}
     
     resolve(canvas.toDataURL('image/png'));
   });
@@ -362,9 +372,9 @@ const drawPieChart = (ctx, data, width, height, options) => {
 };
 
 const drawBarChart = (ctx, data, width, height, options) => {
-  const margin = 50;
-  const chartWidth = width - 2 * margin;
-  const chartHeight = height - 2 * margin - 40;
+  const margin = { top: 50, right: 50, bottom: 80, left: 50 };
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom - 40;
   const maxValue = Math.max(...Object.values(data));
   const barWidth = chartWidth / Object.keys(data).length - 10;
   
@@ -378,25 +388,25 @@ const drawBarChart = (ctx, data, width, height, options) => {
   ctx.strokeStyle = '#e5e7eb';
   ctx.lineWidth = 1;
   for (let i = 0; i <= 5; i++) {
-    const y = height - margin - (i / 5) * chartHeight;
+    const y = height - margin.bottom - (i / 5) * chartHeight;
     ctx.beginPath();
-    ctx.moveTo(margin, y);
-    ctx.lineTo(width - margin, y);
+    ctx.moveTo(margin.left, y);
+    ctx.lineTo(width - margin.right, y);
     ctx.stroke();
     
     // Y-axis labels
     ctx.fillStyle = '#6b7280';
     ctx.font = '10px Arial';
     ctx.textAlign = 'right';
-    ctx.fillText(Math.round((i / 5) * maxValue).toString(), margin - 5, y + 3);
+    ctx.fillText(Math.round((i / 5) * maxValue).toString(), margin.left - 5, y + 3);
   }
   
-  let x = margin + 5;
+  let x = margin.left + 5;
   const colors = options.colors || ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
   
   Object.entries(data).forEach(([label, value], index) => {
     const barHeight = maxValue > 0 ? (value / maxValue) * chartHeight : 0;
-    const y = height - margin - barHeight;
+    const y = height - margin.bottom - barHeight;
     const color = colors[index % colors.length];
     
     // Draw bar
@@ -409,10 +419,15 @@ const drawBarChart = (ctx, data, width, height, options) => {
     ctx.textAlign = 'center';
     ctx.fillText(value.toString(), x + barWidth/2, y - 5);
     
-    // Category label
+    // Rotated category label
+    ctx.save();
+    ctx.translate(x + barWidth/2, height - margin.bottom + 5);
+    ctx.rotate(-Math.PI / 4); // Rotate 45 degrees counter-clockwise
+    ctx.fillStyle = '#1f2937';
     ctx.font = '10px Arial';
-    const displayLabel = label.length > 8 ? label.substring(0, 8) + '...' : label;
-    ctx.fillText(displayLabel, x + barWidth/2, height - margin + 15);
+    ctx.textAlign = 'right';
+    ctx.fillText(label, 0, 0); // Use full label instead of truncated
+    ctx.restore();
     
     x += barWidth + 10;
   });
@@ -481,6 +496,105 @@ const drawDonutChart = (ctx, data, width, height, options) => {
       legendY += 20;
     }
   });
+};
+const drawStackedBarChart = (ctx, data, width, height, options) => {
+  const margin = { top: 50, right: 50, bottom: 80, left: 50 };
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  
+  // Draw title
+  ctx.fillStyle = '#1f2937';
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(options.title || 'Stacked Bar Chart', width / 2, 25);
+  
+  const categories = Object.keys(data);
+  const barWidth = chartWidth / categories.length - 10;
+  
+  // Find max total for scaling
+  const maxTotal = Math.max(...categories.map(category => 
+    data[category].onTime + data[category].delayed
+  ));
+  
+  // Draw grid lines and Y-axis labels
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = height - margin.bottom - (i / 5) * chartHeight;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, y);
+    ctx.lineTo(width - margin.right, y);
+    ctx.stroke();
+    
+    // Y-axis labels
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.round((i / 5) * maxTotal).toString(), margin.left - 5, y + 3);
+  }
+  
+  // Draw bars
+  let x = margin.left + 5;
+  const onTimeColor = '#10b981'; // Green
+  const delayedColor = '#ef4444'; // Red
+  
+  categories.forEach(category => {
+    const onTime = data[category].onTime;
+    const delayed = data[category].delayed;
+    const total = onTime + delayed;
+    
+    // Calculate bar heights
+    const onTimeHeight = (onTime / maxTotal) * chartHeight;
+    const delayedHeight = (delayed / maxTotal) * chartHeight;
+    
+    // Draw delayed portion (bottom)
+    if (delayed > 0) {
+      ctx.fillStyle = delayedColor;
+      ctx.fillRect(x, height - margin.bottom - delayedHeight, barWidth, delayedHeight);
+    }
+    
+    // Draw on-time portion (top)
+    if (onTime > 0) {
+      ctx.fillStyle = onTimeColor;
+      ctx.fillRect(x, height - margin.bottom - onTimeHeight - delayedHeight, barWidth, onTimeHeight);
+    }
+    
+    // Bar outline
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, height - margin.bottom - onTimeHeight - delayedHeight, barWidth, onTimeHeight + delayedHeight);
+    
+    // Rotated category label
+    ctx.save();
+    ctx.translate(x + barWidth/2, height - margin.bottom + 5);
+    ctx.rotate(-Math.PI / 4); // Rotate 45 degrees counter-clockwise
+    ctx.fillStyle = '#1f2937';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText(category, 0, 0); // Use full category name
+    ctx.restore();
+    
+    x += barWidth + 10;
+  });
+  
+  // Draw legend
+  const legendY = 50;
+  
+  // On-time legend
+  ctx.fillStyle = onTimeColor;
+  ctx.fillRect(width - 120, legendY, 15, 15);
+  
+  ctx.fillStyle = '#1f2937';
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('On Time', width - 100, legendY + 12);
+  
+  // Delayed legend
+  ctx.fillStyle = delayedColor;
+  ctx.fillRect(width - 120, legendY + 25, 15, 15);
+  
+  ctx.fillStyle = '#1f2937';
+  ctx.fillText('Delayed', width - 100, legendY + 37);
 };
 
 // Enhanced PDF Document Component with Real Charts
@@ -624,166 +738,230 @@ const BIReportDocument = ({ data, chartImages = {} }) => {
         <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
       </Page>
 
-      {/* Mold Category Analysis with Real Chart */}
-      <Page style={styles.page}>
-        <Text style={styles.sectionHeader}>MOLD CATEGORY ANALYSIS & TRENDS</Text>
+     {/* Mold Category Analysis with Real Chart */}
+<Page style={styles.page}>
+  <Text style={styles.sectionHeader}>MOLD CATEGORY ANALYSIS & TRENDS</Text>
 
-        <View style={styles.chartContainer}>
-          <View style={styles.chartColumn}>
-            <Text style={styles.chartTitle}>Mold Category Distribution</Text>
-            <Text style={styles.chartSubtitle}>Total: {totalMolds} molds in {currentYear}</Text>
-            {chartImages.categoryPieChart ? (
-              <Image
-                src={chartImages.categoryPieChart}
-                style={{ width: '100%', height: 200, marginBottom: 15 }}
-              />
-            ) : (
-              <View style={styles.chartPlaceholder}>
-                <Text>Pie Chart: Category Distribution</Text>
-              </View>
-            )}
+  <View style={styles.chartContainerVertical}>
+    {/* Chart section - full width */}
+    <View style={styles.chartFull}>
+      <Text style={styles.chartTitle}>Mold Category Distribution</Text>
+      <Text style={styles.chartSubtitle}>Total: {totalMolds} molds in {currentYear}</Text>
+ {chartImages.categoryPieChart ? (
+  <Image
+    src={chartImages.categoryPieChart}
+    style={{ 
+      width: '100%', 
+      height: 300, // Slightly taller gives more space
+      objectFit: 'contain', 
+      marginBottom: 15 
+    }}
+  />
+) : (
+  <View style={styles.chartPlaceholder}>
+    <Text>Pie Chart: Category Distribution</Text>
+  </View>
+)}
+    </View>
+    
+    {/* Table section - full width */}
+    <View style={styles.table}>
+      <View style={styles.tableRow}>
+        <Text style={styles.tableColHeader}>Category</Text>
+        <Text style={styles.tableColHeader}>Count</Text>
+        <Text style={styles.tableColHeader}>Percentage</Text>
+        <Text style={styles.tableColHeader}>Status</Text>
+      </View>
+      {analyticsData.categoryBreakdown && Object.entries({
+        'New Molds': analyticsData.categoryBreakdown?.newMolds || 0,
+        'Renovate': analyticsData.categoryBreakdown?.renovateMolds || 0,
+        'Modify': analyticsData.categoryBreakdown?.modifyMolds || 0,
+        'Shapeup': analyticsData.categoryBreakdown?.shapeupMolds || 0
+      }).map(([category, count]) => (
+        <View style={styles.tableRow} key={category}>
+          <Text style={styles.tableCol}>{category}</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>{count}</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>
+            {totalMolds ? ((count / totalMolds) * 100).toFixed(1) : 0}%
+          </Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>
+            {count > 0 ? 'Active' : 'None'}
+          </Text>
+        </View>
+      ))}
+    </View>
+  </View>
+
+  <Text style={styles.footer}>
+    TTMS Business Intelligence Report - {currentYear} Analytics
+  </Text>
+  <Text style={styles.pageNumber}>Page 2</Text>
+  <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
+</Page>
+{/* Delivery Performance Overview Page */}
+<Page style={styles.page}>
+  <Text style={styles.sectionHeaderGreen}>DELIVERY PERFORMANCE ANALYTICS</Text>
+
+  {analyticsData.deliveryPerformance && (
+    <View style={styles.chartContainerVertical}>
+      {/* Chart section - full width */}
+      <View style={styles.chartFull}>
+        <Text style={styles.chartTitle}>Delivery Performance Overview</Text>
+        <Text style={styles.chartSubtitle}>{currentYear} Delivery Statistics</Text>
+        {chartImages.deliveryDonutChart ? (
+          <Image
+            src={chartImages.deliveryDonutChart}
+            style={{ width: '100%', height: 250, marginBottom: 15 }}
+          />
+        ) : (
+          <View style={styles.chartPlaceholder}>
+            <Text>Donut Chart: On-Time vs Delayed</Text>
           </View>
-          <View style={styles.tableColumn}>
-            <View style={styles.table}>
-              <View style={styles.tableRow}>
-                <Text style={styles.tableColHeader}>Category</Text>
-                <Text style={styles.tableColHeader}>Count</Text>
-                <Text style={styles.tableColHeader}>Percentage</Text>
-                <Text style={styles.tableColHeader}>Status</Text>
+        )}
+      </View>
+      
+      {/* Table section - full width */}
+      <View style={styles.table}>
+        <View style={styles.tableRow}>
+          <Text style={styles.tableColHeader}>Metric</Text>
+          <Text style={styles.tableColHeader}>Value</Text>
+          <Text style={styles.tableColHeader}>Benchmark</Text>
+          <Text style={styles.tableColHeader}>Rating</Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text style={styles.tableCol}>On-Time Deliveries</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>
+            {analyticsData.deliveryPerformance.totalOnTime}
+          </Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>90%</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>
+            {onTimeRate >= 90 ? 'Excellent' : 'Good'}
+          </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text style={styles.tableCol}>Delayed Deliveries</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>
+            {analyticsData.deliveryPerformance.totalDelayed}
+          </Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>&lt;10%</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>
+            {analyticsData.deliveryPerformance.totalDelayed <= totalDeliveries * 0.1 ? 'Excellent' : 'Needs Improvement'}
+          </Text>
+        </View>
+        <View style={styles.tableRow}>
+          <Text style={styles.tableCol}>Delivery Reliability</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>{onTimeRate}%</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>&gt;90%</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>Good</Text>
+        </View>
+      </View>
+
+      <View style={styles.insightBox}>
+        <Text style={styles.insightTitle}>Delivery Performance Insights</Text>
+        <Text style={styles.insightText}>
+          Overall delivery reliability is at {onTimeRate}%, which is {onTimeRate >= 90 ? 'excellent' : 'good'}. 
+          This demonstrates the system's strong commitment to timely delivery, with 
+          {analyticsData.deliveryPerformance.totalOnTime} molds delivered on schedule.
+          {onTimeRate < 90 && ' Focus on improving delayed deliveries could increase overall performance.'}
+        </Text>
+      </View>
+    </View>
+  )}
+
+  <Text style={styles.footer}>
+    TTMS Business Intelligence Report - {currentYear} Analytics
+  </Text>
+  <Text style={styles.pageNumber}>Page 3</Text>
+  <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
+</Page>
+
+{/* Category-wise Performance Analysis Page */}
+<Page style={styles.page}>
+  <Text style={styles.sectionHeaderGreen}>CATEGORY PERFORMANCE ANALYSIS</Text>
+
+  {analyticsData.deliveryPerformance?.byCategory && (
+    <>
+      <Text style={styles.chartTitle}>Category-wise Performance Analysis</Text>
+      <Text style={styles.chartSubtitle}>On-Time vs Delayed Deliveries by Category</Text>
+      {chartImages.categoryPerformanceChart ? (
+        <Image
+          src={chartImages.categoryPerformanceChart}
+          style={{ width: '100%', height: 300, objectFit: 'contain', marginBottom: 15 }}
+        />
+      ) : (
+        <View style={styles.chartPlaceholder}>
+          <Text>Stacked Bar Chart: Performance by Category</Text>
+        </View>
+      )}
+
+      <View style={styles.table}>
+        <View style={styles.tableRow}>
+          <Text style={styles.tableColHeader}>Category</Text>
+          <Text style={styles.tableColHeader}>On-Time</Text>
+          <Text style={styles.tableColHeader}>Delayed</Text>
+          <Text style={styles.tableColHeader}>On-Time %</Text>
+        </View>
+        {Object.entries(analyticsData.deliveryPerformance.byCategory).map(([category, stats]) => {
+          const total = stats.onTime + stats.delayed;
+          const onTimePercentage = total > 0 ? ((stats.onTime / total) * 100).toFixed(1) : 0;
+          
+          return (
+            <View style={styles.tableRow} key={category}>
+              <Text style={styles.tableCol}>{category}</Text>
+              <Text style={[styles.tableCol, styles.tableCellCenter]}>{stats.onTime}</Text>
+              <Text style={[styles.tableCol, styles.tableCellCenter]}>{stats.delayed}</Text>
+              <View style={styles.tableCol}>
+                <Text style={[styles.performanceIndicator, 
+                  onTimePercentage >= 90 ? styles.excellentStatus : 
+                  onTimePercentage >= 75 ? styles.goodStatus : styles.needsImprovementStatus]}>
+                  {onTimePercentage}%
+                </Text>
               </View>
-              {analyticsData.categoryBreakdown && Object.entries({
-                'New Molds': analyticsData.categoryBreakdown?.newMolds || 0,
-                'Renovate': analyticsData.categoryBreakdown?.renovateMolds || 0,
-                'Modify': analyticsData.categoryBreakdown?.modifyMolds || 0,
-                'Shapeup': analyticsData.categoryBreakdown?.shapeupMolds || 0
-              }).map(([category, count]) => (
-                <View style={styles.tableRow} key={category}>
-                  <Text style={styles.tableCol}>{category}</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>{count}</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>
-                    {totalMolds ? ((count / totalMolds) * 100).toFixed(1) : 0}%
-                  </Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>
-                    {count > 0 ? 'Active' : 'None'}
-                  </Text>
-                </View>
-              ))}
             </View>
+          );
+        })}
+        <View style={styles.tableRow}>
+          <Text style={[styles.tableCol, {fontWeight: 'bold'}]}>Total</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter, {fontWeight: 'bold'}]}>
+            {analyticsData.deliveryPerformance.totalOnTime}
+          </Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter, {fontWeight: 'bold'}]}>
+            {analyticsData.deliveryPerformance.totalDelayed}
+          </Text>
+          <View style={styles.tableCol}>
+            <Text style={[styles.performanceIndicator, 
+              onTimeRate >= 90 ? styles.excellentStatus : 
+              onTimeRate >= 75 ? styles.goodStatus : styles.needsImprovementStatus]}>
+              {onTimeRate}%
+            </Text>
           </View>
         </View>
+      </View>
 
-        <Text style={styles.footer}>
-          TTMS Business Intelligence Report - {currentYear} Analytics
+      <View style={styles.insightBox}>
+        <Text style={styles.insightTitle}>Category Performance Insights</Text>
+        <Text style={styles.insightText}>
+          Analysis of delivery performance by category reveals variations in reliability. 
+          {Object.entries(analyticsData.deliveryPerformance.byCategory)
+            .sort(([,a], [,b]) => {
+              const aRate = a.onTime / (a.onTime + a.delayed);
+              const bRate = b.onTime / (b.onTime + b.delayed);
+              return bRate - aRate;
+            })
+            .slice(0, 1)
+            .map(([category]) => ` ${category} shows the strongest delivery performance`)}. 
+          Focus improvement efforts on categories with on-time rates below 75%.
         </Text>
-        <Text style={styles.pageNumber}>Page 2</Text>
-        <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
-      </Page>
+      </View>
+    </>
+  )}
 
-      {/* Delivery Performance with Real Charts */}
-      <Page style={styles.page}>
-        <Text style={styles.sectionHeaderGreen}>DELIVERY PERFORMANCE ANALYTICS</Text>
-
-        {analyticsData.deliveryPerformance && (
-          <>
-            <View style={styles.chartContainer}>
-              <View style={styles.chartColumn}>
-                <Text style={styles.chartTitle}>Delivery Performance Overview</Text>
-                <Text style={styles.chartSubtitle}>{currentYear} Delivery Statistics</Text>
-                {chartImages.deliveryDonutChart ? (
-                  <Image
-                    src={chartImages.deliveryDonutChart}
-                    style={{ width: '100%', height: 200, marginBottom: 15 }}
-                  />
-                ) : (
-                  <View style={styles.chartPlaceholder}>
-                    <Text>Donut Chart: On-Time vs Delayed</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.tableColumn}>
-                <View style={styles.table}>
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableColHeader}>Metric</Text>
-                    <Text style={styles.tableColHeader}>Value</Text>
-                    <Text style={styles.tableColHeader}>Benchmark</Text>
-                    <Text style={styles.tableColHeader}>Rating</Text>
-                  </View>
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableCol}>On-Time Deliveries</Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>
-                      {analyticsData.deliveryPerformance.totalOnTime}
-                    </Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>90%</Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>
-                      {onTimeRate >= 90 ? 'Excellent' : 'Good'}
-                    </Text>
-                  </View>
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableCol}>Delayed Deliveries</Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>
-                      {analyticsData.deliveryPerformance.totalDelayed}
-                    </Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>&lt;10%</Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>
-                      {analyticsData.deliveryPerformance.totalDelayed <= totalDeliveries * 0.1 ? 'Excellent' : 'Needs Improvement'}
-                    </Text>
-                  </View>
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableCol}>Delivery Reliability</Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>{onTimeRate}%</Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>&gt;90%</Text>
-                    <Text style={[styles.tableCol, styles.tableCellCenter]}>Good</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Category-wise Performance */}
-            {analyticsData.deliveryPerformance?.byCategory && (
-              <>
-                <Text style={styles.chartTitle}>Category-wise Performance Analysis</Text>
-                <Text style={styles.chartSubtitle}>On-Time vs Delayed Deliveries by Category</Text>
-                <View style={styles.chartPlaceholder}>
-                  <Text>Stacked Bar Chart: Performance by Category</Text>
-                </View>
-
-                <View style={styles.table}>
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableColHeader}>Category</Text>
-                    <Text style={styles.tableColHeader}>On Time</Text>
-                    <Text style={styles.tableColHeader}>Delayed</Text>
-                    <Text style={styles.tableColHeader}>Total</Text>
-                    <Text style={styles.tableColHeader}>Success Rate</Text>
-                    <Text style={styles.tableColHeader}>Grade</Text>
-                  </View>
-                  {Object.entries(analyticsData.deliveryPerformance.byCategory).map(([category, data]) => {
-                    const total = data.onTime + data.delayed;
-                    const successRate = total > 0 ? ((data.onTime / total) * 100).toFixed(1) : 0;
-                    const grade = successRate >= 95 ? 'A+' : successRate >= 85 ? 'A' : successRate >= 75 ? 'B' : successRate >= 65 ? 'C' : 'D';
-                    
-                    return (
-                      <View style={styles.tableRow} key={category}>
-                        <Text style={styles.tableCol}>{category}</Text>
-                        <Text style={[styles.tableCol, styles.tableCellCenter]}>{data.onTime}</Text>
-                        <Text style={[styles.tableCol, styles.tableCellCenter]}>{data.delayed}</Text>
-                        <Text style={[styles.tableCol, styles.tableCellCenter]}>{total}</Text>
-                        <Text style={[styles.tableCol, styles.tableCellCenter]}>{successRate}%</Text>
-                        <Text style={[styles.tableCol, styles.tableCellCenter]}>{grade}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-          </>
-        )}
-
-        <Text style={styles.footer}>
-          TTMS Business Intelligence Report - {currentYear} Analytics
-        </Text>
-        <Text style={styles.pageNumber}>Page 3</Text>
-        <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
-      </Page>
+  <Text style={styles.footer}>
+    TTMS Business Intelligence Report - {currentYear} Analytics
+  </Text>
+  <Text style={styles.pageNumber}>Page 4</Text>
+  <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
+</Page>
 
       {/* Machine Performance */}
       {analyticsData.machinePerformance?.byMachine && (
@@ -804,31 +982,31 @@ const BIReportDocument = ({ data, chartImages = {} }) => {
           )}
 
           <View style={styles.table}>
-            <View style={styles.tableRow}>
-              <Text style={styles.tableColHeader}>Machine</Text>
-              <Text style={styles.tableColHeader}>Total Jobs</Text>
-              <Text style={styles.tableColHeader}>On Time</Text>
-              <Text style={styles.tableColHeader}>Delayed</Text>
-              <Text style={styles.tableColHeader}>Efficiency %</Text>
-              <Text style={styles.tableColHeader}>Status</Text>
-            </View>
-            {Object.entries(analyticsData.machinePerformance.byMachine).map(([machine, data]) => {
-              const total = data.onTime + data.delayed;
-              const efficiency = total > 0 ? ((data.onTime / total) * 100).toFixed(1) : 0;
-              const status = efficiency >= 90 ? 'Excellent' : efficiency >= 75 ? 'Good' : 'Needs Attention';
-              
-              return (
-                <View style={styles.tableRow} key={machine}>
-                  <Text style={styles.tableCol}>{machine}</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>{total}</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>{data.onTime}</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>{data.delayed}</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>{efficiency}%</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>{status}</Text>
-                </View>
-              );
-            })}
-          </View>
+  <View style={styles.tableRow}>
+    <Text style={[styles.tableColHeader, { width: '20%' }]}>Machine</Text>
+    <Text style={[styles.tableColHeader, { width: '15%' }]}>Total Jobs</Text>
+    <Text style={[styles.tableColHeader, { width: '15%' }]}>On Time</Text>
+    <Text style={[styles.tableColHeader, { width: '15%' }]}>Delayed</Text>
+    <Text style={[styles.tableColHeader, { width: '20%' }]}>Efficiency %</Text>
+    <Text style={[styles.tableColHeader, { width: '15%' }]}>Status</Text>
+  </View>
+  {Object.entries(analyticsData.machinePerformance.byMachine).map(([machine, data]) => {
+    const total = data.onTime + data.delayed;
+    const efficiency = total > 0 ? ((data.onTime / total) * 100).toFixed(1) : 0;
+    const status = efficiency >= 90 ? 'Excellent' : efficiency >= 75 ? 'Good' : 'Needs Attention';
+    
+    return (
+      <View style={styles.tableRow} key={machine}>
+        <Text style={[styles.tableCol, { width: '20%' }]}>{machine}</Text>
+        <Text style={[styles.tableCol, styles.tableCellCenter, { width: '15%' }]}>{total}</Text>
+        <Text style={[styles.tableCol, styles.tableCellCenter, { width: '15%' }]}>{data.onTime}</Text>
+        <Text style={[styles.tableCol, styles.tableCellCenter, { width: '15%' }]}>{data.delayed}</Text>
+        <Text style={[styles.tableCol, styles.tableCellCenter, { width: '20%' }]}>{efficiency}%</Text>
+        <Text style={[styles.tableCol, styles.tableCellCenter, { width: '15%' }]}>{status}</Text>
+      </View>
+    );
+  })}
+</View>
 
           <View style={styles.insightBox}>
             <Text style={styles.insightTitle}>Machine Performance Insights</Text>
@@ -849,64 +1027,66 @@ const BIReportDocument = ({ data, chartImages = {} }) => {
 
       {/* Customer Analytics */}
       <Page style={styles.page}>
-        <Text style={styles.sectionHeaderPurple}>CUSTOMER ANALYTICS & INSIGHTS</Text>
+  <Text style={styles.sectionHeaderPurple}>CUSTOMER ANALYTICS & INSIGHTS</Text>
 
-        <View style={styles.chartContainer}>
-          <View style={styles.chartColumn}>
-            <Text style={styles.chartTitle}>Top 6 Customers by Mold Volume</Text>
-            <Text style={styles.chartSubtitle}>Customer Distribution in {currentYear}</Text>
-            {chartImages.customerBarChart ? (
-              <Image
-                src={chartImages.customerBarChart}
-                style={{ width: '100%', height: 200, marginBottom: 15 }}
-              />
-            ) : (
-              <View style={styles.chartPlaceholder}>
-                <Text>Bar Chart: Customer Analysis</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.tableColumn}>
-            <View style={styles.table}>
-              <View style={styles.tableRow}>
-                <Text style={styles.tableColHeader}>Customer</Text>
-                <Text style={styles.tableColHeader}>Molds</Text>
-                <Text style={styles.tableColHeader}>Share %</Text>
-                <Text style={styles.tableColHeader}>Impact</Text>
-              </View>
-              {topCustomers.map(([customer, count], index) => (
-                <View style={styles.tableRow} key={customer}>
-                  <Text style={styles.tableCol}>{customer}</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>{count}</Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>
-                    {((count / totalMolds) * 100).toFixed(1)}%
-                  </Text>
-                  <Text style={[styles.tableCol, styles.tableCellCenter]}>
-                    {count >= 10 ? 'High' : count >= 5 ? 'Medium' : 'Low'}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
+  {/* Using chartContainerVertical instead of chartContainer for vertical layout */}
+  <View style={styles.chartContainerVertical}>
+    {/* Chart section - full width */}
+    <View style={styles.chartFull}>
+      <Text style={styles.chartTitle}>Top 6 Customers by Mold Volume</Text>
+      <Text style={styles.chartSubtitle}>Customer Distribution in {currentYear}</Text>
+      {chartImages.customerBarChart ? (
+        <Image
+          src={chartImages.customerBarChart}
+          style={{ width: '100%', height: 250, objectFit: 'contain', marginBottom: 15 }}
+        />
+      ) : (
+        <View style={styles.chartPlaceholder}>
+          <Text>Bar Chart: Customer Analysis</Text>
         </View>
-
-        <View style={styles.insightBox}>
-          <Text style={styles.insightTitle}>Customer Relationship Insights</Text>
-          <Text style={styles.insightText}>
-            Analysis of {customersData.length} registered customers shows concentration in top accounts. 
-            Recommend diversification strategy to reduce dependency on major customers and expand market reach.
+      )}
+    </View>
+    
+    {/* Table section - full width */}
+    <View style={styles.table}>
+      <View style={styles.tableRow}>
+        <Text style={styles.tableColHeader}>Customer</Text>
+        <Text style={styles.tableColHeader}>Molds</Text>
+        <Text style={styles.tableColHeader}>Share %</Text>
+        <Text style={styles.tableColHeader}>Impact</Text>
+      </View>
+      {topCustomers.map(([customer, count], index) => (
+        <View style={styles.tableRow} key={customer}>
+          <Text style={styles.tableCol}>{customer}</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>{count}</Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>
+            {((count / totalMolds) * 100).toFixed(1)}%
+          </Text>
+          <Text style={[styles.tableCol, styles.tableCellCenter]}>
+            {count >= 10 ? 'High' : count >= 5 ? 'Medium' : 'Low'}
           </Text>
         </View>
+      ))}
+    </View>
+  </View>
 
-        <Text style={styles.footer}>
-          TTMS Business Intelligence Report - {currentYear} Analytics
-        </Text>
-        <Text style={styles.pageNumber}>Page 5</Text>
-        <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
-      </Page>
+  <View style={styles.insightBox}>
+    <Text style={styles.insightTitle}>Customer Relationship Insights</Text>
+    <Text style={styles.insightText}>
+      Analysis of {customersData.length} registered customers shows concentration in top accounts. 
+      Recommend diversification strategy to reduce dependency on major customers and expand market reach.
+    </Text>
+  </View>
+
+  <Text style={styles.footer}>
+    TTMS Business Intelligence Report - {currentYear} Analytics
+  </Text>
+  <Text style={styles.pageNumber}>Page 5</Text>
+  <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
+</Page>
 
       {/* Strategic Recommendations */}
-      <Page style={styles.page}>
+      {/* <Page style={styles.page}>
         <Text style={styles.sectionHeaderRed}>STRATEGIC RECOMMENDATIONS</Text>
 
         <View style={styles.table}>
@@ -946,10 +1126,10 @@ const BIReportDocument = ({ data, chartImages = {} }) => {
             <Text style={styles.tableCol}>Save 10 hours/week</Text>
             <Text style={styles.tableCol}>4 months</Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Action Items */}
-        <Text style={styles.chartTitle}>Immediate Action Items</Text>
+        {/* <Text style={styles.chartTitle}>Immediate Action Items</Text>
         <View style={styles.listItem}>
           <Text style={styles.bullet}>• </Text>
           <Text style={styles.listText}>Review machine maintenance schedules and implement predictive analytics</Text>
@@ -981,13 +1161,13 @@ const BIReportDocument = ({ data, chartImages = {} }) => {
         </Text>
         <Text style={styles.pageNumber}>Page 6</Text>
         <Text style={styles.confidential}>CONFIDENTIAL - Internal Use Only</Text>
-      </Page>
+      </Page> */}
     </Document>
   );
 };
 
 // Main Component
-function BIReportReactPdf({ triggerComponent = null }) {
+function BIReportReactPdf({ triggerComponent = null, selectedYear }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportData, setReportData] = useState(null);
 
@@ -996,23 +1176,25 @@ function BIReportReactPdf({ triggerComponent = null }) {
     try {
       const token = localStorage.getItem('refreshToken');
       const headers = { Authorization: `Bearer ${token}` };
-      const currentYear = new Date().getFullYear();
+      // Use the passed selectedYear instead of current year
+      const reportYear = selectedYear || new Date().getFullYear();
 
       const [moldsRes, processesRes, usersRes, customersRes, analyticsRes] = await Promise.all([
         axios.get(buildApiUrl(API_ENDPOINTS.MOLD.SHARED), { headers }),
         axios.get(buildApiUrl(API_ENDPOINTS.PROCESS.SHARED), { headers }),
         axios.get(buildApiUrl(API_ENDPOINTS.MANAGER.USERS), { headers }),
         axios.get(buildApiUrl(API_ENDPOINTS.CUSTOMERS.LIST), { headers }),
-        axios.get(buildApiUrl(API_ENDPOINTS.MOLD.ANALYTICS(currentYear)), { headers })
+        // Use selectedYear in the API call
+        axios.get(buildApiUrl(API_ENDPOINTS.MOLD.ANALYTICS(reportYear)), { headers })
       ]);
 
-      const data = {
+       const data = {
         moldsData: moldsRes.data,
         processesData: processesRes.data,
         usersData: usersRes.data,
         customersData: customersRes.data,
         analyticsData: analyticsRes.data,
-        currentYear
+        currentYear: reportYear 
       };
 
       setReportData(data);
@@ -1043,10 +1225,12 @@ function BIReportReactPdf({ triggerComponent = null }) {
           'Modify': data.analyticsData.categoryBreakdown?.modifyMolds || 0,
           'Shapeup': data.analyticsData.categoryBreakdown?.shapeupMolds || 0
         };
-        images.categoryPieChart = await generateChartImage(categoryData, 'pie', {
-          title: 'Mold Category Distribution',
-          colors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
-        });
+      images.categoryPieChart = await generateChartImage(categoryData, 'pie', {
+  width: 800,  // Wide enough for good quality
+  height: 400, // Better aspect ratio for pie charts (more circular)
+  title: 'Mold Category Distribution',
+  colors: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
+});
       }
 
       // Delivery donut chart
@@ -1056,6 +1240,8 @@ function BIReportReactPdf({ triggerComponent = null }) {
           'Delayed': data.analyticsData.deliveryPerformance.totalDelayed
         };
         images.deliveryDonutChart = await generateChartImage(deliveryData, 'donut', {
+          width: 800,  // Wide enough for good quality
+          height: 400, // Better aspect ratio for donut charts
           title: 'Delivery Performance',
           colors: ['#10b981', '#ef4444']
         });
@@ -1075,6 +1261,8 @@ function BIReportReactPdf({ triggerComponent = null }) {
       );
 
       images.customerBarChart = await generateChartImage(topCustomers, 'bar', {
+        width: 800,
+        height: 400,
         title: 'Top 6 Customers by Mold Volume',
         colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
       });
@@ -1089,10 +1277,24 @@ function BIReportReactPdf({ triggerComponent = null }) {
         );
 
         images.machineBarChart = await generateChartImage(machineData, 'bar', {
+          width: 800,
+          height: 400,
           title: 'Machine Utilization (Total Jobs)',
           colors: ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']
         });
       }
+      // Add the generateChartImages function
+if (data.analyticsData.deliveryPerformance?.byCategory) {
+  images.categoryPerformanceChart = await generateChartImage(
+    data.analyticsData.deliveryPerformance.byCategory,
+    'stackedBar',
+    {
+      width: 800,
+      height: 400,
+      title: 'Category Performance: On-Time vs Delayed',
+    }
+  );
+}
 
     } catch (error) {
       console.error('Error generating chart images:', error);
@@ -1165,7 +1367,7 @@ function BIReportReactPdf({ triggerComponent = null }) {
       ) : (
         <>
           <FileText className="w-5 h-5" />
-          Generate React-PDF Report
+          Generate PDF Report
         </>
       )}
     </button>
@@ -1190,7 +1392,7 @@ function BIReportReactPdf({ triggerComponent = null }) {
           ) : (
             <>
               <Download className="w-5 h-5" />
-              Download React-PDF Report
+              
             </>
           )
         )}
@@ -1209,11 +1411,11 @@ function BIReportReactPdf({ triggerComponent = null }) {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">React-PDF Business Intelligence Report</h2>
-          <p className="text-gray-600">Generate professional PDF with React-PDF library - now with real charts!</p>
+          <h2 className="text-xl font-bold text-gray-900">Business Intelligence Report PDF</h2>
+          <p className="text-gray-600">Generate professional PDF with real charts!</p>
         </div>
         <div className="flex items-center gap-2 text-blue-600">
-          <Camera className="w-6 h-6" />
+         
           <Download className="w-6 h-6" />
         </div>
       </div>
@@ -1250,7 +1452,7 @@ function BIReportReactPdf({ triggerComponent = null }) {
           </div>
         </div>
         
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+        {/* <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <div className="flex items-start gap-2">
             <div className="text-green-600 mt-0.5">✨</div>
             <div className="text-sm text-green-800">
@@ -1259,7 +1461,7 @@ function BIReportReactPdf({ triggerComponent = null }) {
             </div>
           </div>
         </div>
-        
+         */}
         <div className="flex gap-3">
           <ReportButton />
           {reportData && <PDFDownloadButton />}
